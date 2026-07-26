@@ -328,6 +328,7 @@ html[data-theme="dark"] .tbl th{ background:#262b35;}
 </header>
 
 <main>
+  <div id="saveErrorBanner" style="display:none;background:#fee2e2;border:1px solid #fecaca;color:#b91c1c;padding:8px 14px;font-size:13px;font-weight:600;text-align:center;position:sticky;top:50px;z-index:49;border-radius:0;"></div>
   <div class="legal-notice no-print" id="legalNotice">
     <span>⚠️ Revise el cuadrante final conforme al convenio, normativa laboral aplicable y necesidades reales del centro. Esta aplicación es una ayuda a la planificación y no garantiza cumplimiento legal automático.</span>
     <span class="x" onclick="document.getElementById('legalNotice').style.display='none'">✕</span>
@@ -626,7 +627,7 @@ function normalizarEstado(s){
     if(!a || typeof a !== 'object'){ s.cuadrantes[y] = { meses:{} }; return; }
     if(!a.meses || typeof a.meses !== 'object') a.meses = {};
     for(let i=0;i<12;i++){
-      if(!a.meses[i]) a.meses[i] = {};
+      if(!a.meses[i] || typeof a.meses[i] !== 'object') a.meses[i] = {};
       const m = a.meses[i];
       if(m.idx === undefined) m.idx = i;
       if(!m.hasOwnProperty('inicio')) m.inicio = null;
@@ -635,20 +636,55 @@ function normalizarEstado(s){
       if(!m.notasDia || typeof m.notasDia !== 'object') m.notasDia = {};
     }
   });
-  if(!s.trabajadores) s.trabajadores = [];
-  if(!s.festivos) s.festivos = [];
-  if(!s.ausencias) s.ausencias = [];
-  if(!s.config) s.config = defaultConfig();
-  if(!s.centro) s.centro = defaultState().centro;
+  if(!Array.isArray(s.trabajadores)) s.trabajadores = [];
+  if(!Array.isArray(s.roles)) s.roles = s.roles || defaultRoles();
+  if(!Array.isArray(s.tiposTurno)) s.tiposTurno = s.tiposTurno || defaultTurnos();
+  if(!Array.isArray(s.festivos)) s.festivos = [];
+  if(!Array.isArray(s.coberturas)) s.coberturas = s.coberturas || defaultCoberturas();
+  if(!Array.isArray(s.ausencias)) s.ausencias = [];
+  if(!Array.isArray(s.plantillas)) s.plantillas = s.plantillas || plantillasDemo();
+  if(!Array.isArray(s.historialGeneraciones)) s.historialGeneraciones = [];
+  if(!Array.isArray(s.descansosPendientes)) s.descansosPendientes = [];
+  if(!s.centro || typeof s.centro !== 'object') s.centro = defaultState().centro;
+  if(!s.config || typeof s.config !== 'object') s.config = defaultConfig();
+  // Merge profundo de config con defaults
+  const dc = defaultConfig();
+  Object.keys(dc).forEach(k=>{ if(s.config[k]===undefined) s.config[k]=dc[k]; });
+  if(!s.config.pesos || typeof s.config.pesos !== 'object') s.config.pesos = dc.pesos || {};
+  if(dc.pesos) Object.keys(dc.pesos).forEach(k=>{ if(s.config.pesos[k]===undefined) s.config.pesos[k]=dc.pesos[k]; });
+  // Trabajadores: merge profundo de preferencias y jornada
+  const defPref = {turnosPermitidos:['M','T','N'],soloTurnos:false,soloTurnosTipo:'',noTrabajaNoches:false,noTrabajaFinesSemana:false,maxDiasConsecutivos:null,minDescansosTrasNoche:null,diasNoDisponibles:[],restriccionesSemanales:[]};
+  const defJor = {horasAnualesObjetivo:1792,horasMensualesObjetivo:null,horasSemanalesObjetivo:40,porcentajeJornada:100};
+  s.trabajadores.forEach(t=>{
+    if(!t.preferencias || typeof t.preferencias !== 'object') t.preferencias = {};
+    Object.keys(defPref).forEach(k=>{ if(t.preferencias[k]===undefined) t.preferencias[k]=defPref[k]; });
+    if(!Array.isArray(t.preferencias.turnosPermitidos)) t.preferencias.turnosPermitidos = defPref.turnosPermitidos;
+    if(!Array.isArray(t.preferencias.diasNoDisponibles)) t.preferencias.diasNoDisponibles = [];
+    if(!t.jornada || typeof t.jornada !== 'object') t.jornada = {};
+    Object.keys(defJor).forEach(k=>{ if(t.jornada[k]===undefined) t.jornada[k]=defJor[k]; });
+    if(t.activo===undefined) t.activo = true;
+    if(!t.nombreCompleto) t.nombreCompleto = (t.apellidos||'')+', '+(t.nombre||'');
+  });
 }
 function save(s, opts){
   if(s) state = s;
   normalizarEstado(state);
   state.actualizadoEn = nowISO();
-  // backup rotatorio (no en cada save silencioso para no llenar)
+  // Intentar guardado principal primero
+  let guardadoOk = false;
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); guardadoOk = true; }catch(e){
+    console.warn('save error',e);
+    const banner = document.getElementById('saveErrorBanner');
+    if(banner){ banner.style.display='block'; banner.textContent='⚠️ Error al guardar en este navegador. Exporta una copia JSON inmediatamente.'; }
+    else alert('⚠️ Error al guardar. Exporta una copia JSON.');
+  }
+  if(!guardadoOk) return;
+  // Ocultar banner si existía
+  const banner = document.getElementById('saveErrorBanner');
+  if(banner) banner.style.display='none';
+  // Solo rotar backups tras guardado exitoso (y no en guardados silenciosos)
   if(!opts || !opts.silent){
     try{
-      // desplazar backups: 5<-4<-3<-2<-1<-actual
       for(let i=BACKUP_KEYS.length-1;i>0;i--){
         const prev = localStorage.getItem(BACKUP_KEYS[i-1]);
         if(prev) localStorage.setItem(BACKUP_KEYS[i], prev);
@@ -657,7 +693,6 @@ function save(s, opts){
     }catch(e){ console.warn('backup rotation failed', e); }
     actualizarSavedTag();
   }
-  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){ console.warn('save error',e); alert('⚠️ Error al guardar en este navegador. Exporta una copia JSON inmediatamente.'); }
 }
 function actualizarSavedTag(){
   const el = document.getElementById('savedTag');
@@ -669,6 +704,10 @@ function fmt(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'
 function parse(str){ const [y,m,d]=str.split('-').map(Number); return new Date(y,m-1,d); }
 function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
 function diasEntre(ini,fin){ const out=[]; let d=new Date(ini); const f=new Date(fin); while(d<=f){ out.push(new Date(d)); d=addDays(d,1);} return out; }
+// Contar días de calendario entre dos fechas (seguro frente a cambios de horario)
+function diasCalendarioEntre(inicioStr, finStr){ const di=parse(inicioStr), df=parse(finStr); let c=0; let d=new Date(di); while(d<=df){c++;d=addDays(d,1);} return c; }
+function sumarDiasFecha(fechaStr, dias){ return fmt(addDays(parse(fechaStr), dias)); }
+function compararFechas(a, b){ return a < b ? -1 : a > b ? 1 : 0; }
 // A qué mes natural (0..11) pertenece una fecha (para atribución correcta en modo operativo)
 function mesNaturalDe(anyo, fechaStr){ const d = parse(fechaStr); return d.getMonth(); }
 
@@ -728,6 +767,76 @@ function delAsig(m, tid, fecha){ delete m.asignaciones[aKey(tid,fecha)]; }
 function isBloqueadaAsig(asig){ return !!(asig && asig.bloqueado); }
 function isAusenciaAsig(asig){ return !!(asig && asig.turno && turnoEsAusencia(asig.turno)); }
 function isManualOReglaBloqueada(asig){ return !!(asig && (asig.bloqueado || asig.origen===ORIGEN_MANUAL)); }
+// Parsear clave de asignación (formato tid_fecha)
+function parseAssignmentKey(key){ const i=key.indexOf('_'); if(i<0) return null; return {tid:key.slice(0,i), fecha:key.slice(i+1)}; }
+
+/* ============ ELEGIBILIDAD CENTRALIZADA ============ */
+function puedeAsignarse(trabajador, code, fechaStr, mes, cfg, opciones){
+  const motivos = [];
+  const opts = opciones || {};
+  if(!trabajador || !trabajador.activo){ motivos.push('Trabajador inactivo o inexistente'); return {permitido:false, motivos}; }
+  const tn = turnoPorCode(code);
+  if(!tn){ motivos.push('Turno inexistente: '+code); return {permitido:false, motivos}; }
+  const p = trabajador.preferencias || {};
+  const d = parse(fechaStr);
+  const dow = d.getDay();
+  const esFinde = (dow===0||dow===6);
+  // Rol requerido
+  if(opts.rolRequerido && trabajador.rol !== opts.rolRequerido) motivos.push('Rol no coincide');
+  // Turnos permitidos
+  if(tn.trabajo && Array.isArray(p.turnosPermitidos) && !p.turnosPermitidos.includes(code)) motivos.push('Turno '+code+' no permitido');
+  // Turno fijo
+  if(p.soloTurnos && p.soloTurnosTipo && tn.trabajo && code !== p.soloTurnosTipo) motivos.push('Solo puede hacer '+p.soloTurnosTipo);
+  // No trabaja noches
+  if(code==='N' && p.noTrabajaNoches) motivos.push('No trabaja noches');
+  // No trabaja fines de semana
+  if(esFinde && p.noTrabajaFinesSemana && tn.trabajo) motivos.push('No trabaja fines de semana');
+  // Día no disponible
+  if(Array.isArray(p.diasNoDisponibles) && p.diasNoDisponibles.includes(fechaStr) && tn.trabajo) motivos.push('Día no disponible');
+  // Ausencia activa
+  const ausMisma = (state.ausencias||[]).find(au=> au.trabajadorId===trabajador.id && fechaStr>=au.inicio && fechaStr<=au.fin);
+  if(ausMisma && tn.trabajo) motivos.push('En ausencia ('+ausMisma.tipo+')');
+  // Celda actual no sobreescribible (salvo simulación)
+  if(!opts.ignorarCeldaActual && mes){
+    const curAsig = getAsig(mes, trabajador.id, fechaStr);
+    if(curAsig){
+      if(curAsig.bloqueado) motivos.push('Celda bloqueada');
+      else if(curAsig.origen===ORIGEN_MANUAL && !opts.forzarManual) motivos.push('Celda manual');
+      else if(curAsig.origen===ORIGEN_AUSENCIA) motivos.push('Celda de ausencia');
+      else if(curAsig.origen===ORIGEN_REGLA && curAsig.bloqueado) motivos.push('Regla N-S-L bloqueada');
+    }
+  }
+  if(!tn.trabajo) return {permitido: motivos.length===0, motivos};
+  // --- Reglas de secuencia (requieren mirar días vecinos) ---
+  const codGlobal = (off)=>{ const fs=sumarDiasFecha(fechaStr,off); const info=mesQueContiene(fs); return info?getCodigo(info.mes,trabajador.id,fs):''; };
+  const codLocal = (off)=>{ if(!mes) return codGlobal(off); return getCodigo(mes,trabajador.id,sumarDiasFecha(fechaStr,off))||codGlobal(off); };
+  // Max días consecutivos
+  const maxC = (p.maxDiasConsecutivos!=null ? p.maxDiasConsecutivos : (cfg||state.config).maxDiasConsecutivos) || 6;
+  let consec=0, off=-1;
+  while(true){ const cd=codLocal(off); if(cd && turnoEsTrabajo(cd)){consec++;off--;} else break; }
+  if(consec>=maxC) motivos.push('Máx días consecutivos ('+maxC+')');
+  // Max noches consecutivas
+  if(code==='N'){
+    const maxN = (cfg||state.config).maxNochesConsecutivas || 2;
+    let cn=0, o2=-1; while(codLocal(o2)==='N'){cn++;o2--;} if(cn>=maxN) motivos.push('Máx noches consecutivas ('+maxN+')');
+  }
+  // Incompatibilidades N->M, N->T
+  if(!((cfg||state.config).permitirIncompatibles)){
+    if((code==='M'||code==='T') && codLocal(-1)==='N') motivos.push('Incompatible: trabajo tras noche');
+  }
+  // M tras T
+  if(code==='M' && !((cfg||state.config).permitirMananaTrasTarde) && codLocal(-1)==='T') motivos.push('M tras T no permitido');
+  // Secuencia N-S-L obligatoria
+  if((cfg||state.config).secuenciaNocheObligatoria && code!=='N' && codLocal(-1)==='N' && code!=='S') motivos.push('Tras N debe ir S (secuencia N-S-L)');
+  // Descanso tras noche (independiente de N-S-L)
+  const minDesc = (p.minDescansosTrasNoche!=null) ? p.minDescansosTrasNoche : ((cfg||state.config).minDescansosTrasNoche||1);
+  if(tn.trabajo && code!=='N'){
+    for(let o3=1; o3<=minDesc; o3++){
+      if(codLocal(-o3)==='N'){ motivos.push('Descanso tras noche insuficiente'); break; }
+    }
+  }
+  return {permitido: motivos.length===0, motivos};
+}
 
 /* ============ TIPO DE DÍA (Fase 5) ============ */
 function tipoDiaDe(d){
@@ -864,39 +973,51 @@ function validarRangoPeriodo(anyo, idx, inicio, fin){
   const errores=[], advertencias=[];
   const dIni=parse(inicio), dFin=parse(fin);
   const modo = state.centro.modoMes || 'natural';
-  if(modo==='operativo'){
+  if(modo==='natural'){
+    const expected_ini = `${anyo}-${String(idx+1).padStart(2,'0')}-01`;
+    const lastDay = new Date(anyo,idx+1,0);
+    const expected_fin = fmt(lastDay);
+    if(inicio!==expected_ini) errores.push(`En modo natural, inicio debe ser ${expected_ini}.`);
+    if(fin!==expected_fin) errores.push(`En modo natural, fin debe ser ${expected_fin}.`);
+  } else {
     if(dIni.getDay()!==1) errores.push(`Inicio debe ser lunes (has puesto ${DIAS_LET[dIni.getDay()]}).`);
     if(dFin.getDay()!==0) errores.push(`Fin debe ser domingo (has puesto ${DIAS_LET[dFin.getDay()]}).`);
-    const totalDias = Math.round((dFin-dIni)/86400000)+1;
+    const totalDias = diasCalendarioEntre(inicio, fin);
     if(totalDias%7!==0) errores.push(`Duración debe ser múltiplo de 7 días (ahora son ${totalDias}).`);
   }
-  // solapes con otros periodos
+  // Solapes con TODOS los años
+  Object.keys(state.cuadrantes).forEach(y=>{
+    const a = state.cuadrantes[y]; if(!a||!a.meses) return;
+    for(let i=0;i<12;i++){
+      if(Number(y)===anyo && i===idx) continue;
+      const other = a.meses[i]; if(!other||!other.inicio||!other.fin) continue;
+      const oI=parse(other.inicio), oF=parse(other.fin);
+      if(dIni<=oF && dFin>=oI) errores.push(`Se solapa con ${MESES_NOM[i]} ${y} (${other.inicio} → ${other.fin}).`);
+    }
+  });
+  // Huecos dentro del mismo año
   const a = state.cuadrantes[anyo];
   if(a){
     for(let i=0;i<12;i++){
       if(i===idx) continue;
       const other = a.meses[i]; if(!other||!other.inicio||!other.fin) continue;
-      const oI=parse(other.inicio), oF=parse(other.fin);
-      if(dIni<=oF && dFin>=oI) errores.push(`Se solapa con ${MESES_NOM[i]} (${other.inicio} → ${other.fin}).`);
-    }
-  }
-  // huecos
-  if(a){
-    for(let i=0;i<12;i++){
-      if(i===idx) continue;
-      const other = a.meses[i]; if(!other||!other.inicio||!other.fin) continue;
       const oF=parse(other.fin), oI2=parse(other.inicio);
-      if(oF<dIni){
-        const gap=Math.round((dIni-addDays(oF,1))/86400000);
-        if(gap>0) advertencias.push(`Hueco de ${gap} día(s) entre ${MESES_NOM[i]} y este periodo.`);
-      }
-      if(oI2>dFin){
-        const gap=Math.round((oI2-addDays(dFin,1))/86400000);
-        if(gap>0) advertencias.push(`Hueco de ${gap} día(s) entre este periodo y ${MESES_NOM[i]}.`);
-      }
+      if(oF<dIni){ const gap=diasCalendarioEntre(fmt(addDays(oF,1)),fmt(addDays(dIni,-1))); if(gap>0) advertencias.push(`Hueco de ${gap} día(s) entre ${MESES_NOM[i]} y este periodo.`); }
+      if(oI2>dFin){ const gap=diasCalendarioEntre(fmt(addDays(dFin,1)),fmt(addDays(oI2,-1))); if(gap>0) advertencias.push(`Hueco de ${gap} día(s) entre este periodo y ${MESES_NOM[i]}.`); }
     }
   }
-  return {valido:errores.length===0, errores, advertencias};
+  // Datos fuera de rango
+  let asignacionesFuera=0, notasFuera=0;
+  const m = a && a.meses[idx];
+  if(m && m.asignaciones){
+    Object.keys(m.asignaciones).forEach(k=>{const p=parseAssignmentKey(k);if(p&&(p.fecha<inicio||p.fecha>fin))asignacionesFuera++;});
+  }
+  if(m && m.notasDia){
+    Object.keys(m.notasDia).forEach(f=>{if(f<inicio||f>fin)notasFuera++;});
+  }
+  if(asignacionesFuera>0) advertencias.push(`${asignacionesFuera} asignación(es) quedarían fuera del nuevo rango (no se borran automáticamente).`);
+  if(notasFuera>0) advertencias.push(`${notasFuera} nota(s) de día quedarían fuera del nuevo rango.`);
+  return {valido:errores.length===0, errores, advertencias, asignacionesFuera, notasFuera};
 }
 
 /* ---- Vista Mes ---- */
@@ -1734,8 +1855,8 @@ function generarAutomatico(seed, mejoraLocal){
   });
 
   // Fase 2: mejora local (intercambios y reasignaciones legales)
-  let mejorasAplicadas = 0;
-  if(mejoraLocal) mejorasAplicadas = mejoraLocalIntercambios(m, dias, acum, cfg, pesos);
+  let mejoraStats = {intentos:0, aceptadas:0, rechazadas:0, restauradaPorSeguridad:false};
+  if(mejoraLocal) mejoraStats = mejoraLocalIntercambios(m, dias, acum, cfg, pesos);
 
   // Historial con snapshot
   state.historialGeneraciones.push({fecha:nowISO(), anyo, mes:idx, seed, snapshot:snap});
@@ -1743,14 +1864,16 @@ function generarAutomatico(seed, mejoraLocal){
   save(state);
 
   const val = validarCuadrante(anyo, idx);
-  // Equity summary by role
   const equidadResumen = calcularResumenEquidadPorRol(anyo);
   let msg = `Generación completada (semilla ${seed}).`;
   if(noCubiertas.length) msg += `\nCobertura pendiente: ${noCubiertas.length} necesidad(es).`;
   if(val.errores.length) msg += `\nErrores de validación: ${val.errores.length}.`;
   msg += '\n'+equidadResumen;
-  if(mejorasAplicadas>0) msg += `\nMejoras locales aplicadas: ${mejorasAplicadas}.`;
-  if(noCubiertas.length>0) msg += '\n\nDetalle:\n'+noCubiertas.slice(0,8).join('\n')+(noCubiertas.length>8?`\n...y ${noCubiertas.length-8} más`:'');
+  if(mejoraLocal){
+    msg += `\n\nMejora local:\n• Movimientos probados: ${mejoraStats.intentos}\n• Aceptados: ${mejoraStats.aceptadas}\n• Rechazados: ${mejoraStats.rechazadas}`;
+    if(mejoraStats.restauradaPorSeguridad) msg += '\n• ⚠ Restaurada por seguridad (empeoró validación)';
+  }
+  if(noCubiertas.length>0) msg += '\n\nDetalle cobertura:\n'+noCubiertas.slice(0,8).join('\n')+(noCubiertas.length>8?`\n...y ${noCubiertas.length-8} más`:'');
   alert(msg);
   renderMes();
 }
@@ -1814,23 +1937,8 @@ function elegirCandidato(tn, rol, d, m, acum, cfg, pesos, rng){
   return cand[0];
 }
 function esLegalAsignar(t, code, d, m, cfg){
-  const cod=(off)=>{ const info=mesQueContiene(fmt(addDays(d,off))); return info?getCodigo(info.mes,t.id,fmt(addDays(d,off))):''; };
-  const codMes=(off)=>getCodigo(m,t.id,fmt(addDays(d,off)));
-  const maxC=(t.preferencias.maxDiasConsecutivos!=null?t.preferencias.maxDiasConsecutivos:cfg.maxDiasConsecutivos);
-  if(maxC){ let c=0, off=-1; while(true){ const cd=codMes(off); if(cd&&turnoEsTrabajo(cd)){ c++; off--; } else break; } if(c>=maxC) return false; }
-  if(code==='M' && !cfg.permitirMananaTrasTarde && codMes(-1)==='T') return false;
-  if(code==='N'){ let c=0, off=-1; while(codMes(off)==='N'){ c++; off--; } if(c>=cfg.maxNochesConsecutivas) return false; }
-  if(!cfg.permitirIncompatibles){ if((code==='M'||code==='T') && cod(-1)==='N') return false; }
-  if(cfg.secuenciaNocheObligatoria && code!=='N' && cod(-1)==='N' && code!=='S') return false;
-  // Descanso tras noche (independiente de N-S-L): si ayer fue N, hoy necesita descanso
-  const minDesc = (t.preferencias.minDescansosTrasNoche!=null) ? t.preferencias.minDescansosTrasNoche : (cfg.minDescansosTrasNoche||1);
-  if(turnoEsTrabajo(code) && code!=='N'){
-    for(let off=1; off<=minDesc; off++){
-      const codPrev = cod(-off);
-      if(codPrev==='N') return false; // hay una N dentro del período de descanso requerido
-    }
-  }
-  return true;
+  const res = puedeAsignarse(t, code, fmt(d), m, cfg, {ignorarCeldaActual:true});
+  return res.permitido;
 }
 function ultimosDiasTrabajados(m, tid, d){
   let c=0, off=-1;
@@ -1846,29 +1954,47 @@ function actualizarAcum(acum, tid, code, d){
 // Mejora local: intercambios y reasignaciones automáticas legales para equilibrar
 function mejoraLocalIntercambios(m, dias, acum, cfg, pesos){
   const roles = [...new Set(state.trabajadores.filter(t=>t.activo).map(t=>t.rol))];
-  let mejoras = 0;
   const maxIter = 200;
-  const costoGlobal = ()=>{
+  const stats = {intentos:0, aceptadas:0, rechazadas:0, restauradaPorSeguridad:false};
+  // Snapshot para restaurar si empeora
+  const snapAntes = JSON.parse(JSON.stringify(m.asignaciones));
+  const valAntes = validarCuadrante(curAnyo, curMesIdx);
+  const erroresAntes = valAntes.errores.length;
+  // Función de coste real desde asignaciones (no acum parcial)
+  const costoReal = ()=>{
     let c=0;
     roles.forEach(rol=>{
       const ts=state.trabajadores.filter(t=>t.activo&&t.rol===rol);
       if(ts.length<2) return;
-      ['N','horas','findes','festivos','domingos','M','T'].forEach(k=>{
-        const vals=ts.map(t=>acum[t.id]?acum[t.id][k]||0:0);
+      const metrics={}; ts.forEach(t=>metrics[t.id]={N:0,horas:0,findes:0,festivos:0,domingos:0,M:0,T:0});
+      dias.forEach(d=>{
+        const ds=fmt(d); const isDom=d.getDay()===0; const isSab=d.getDay()===6;
+        const fest=state.festivos.find(f=>f.fecha===ds);
+        ts.forEach(t=>{
+          const code=getCodigo(m,t.id,ds); if(!code) return;
+          const tn=turnoPorCode(code); if(!tn||!tn.trabajo) return;
+          metrics[t.id].horas+=(tn.horas||0);
+          if(code==='N')metrics[t.id].N++; if(code==='M')metrics[t.id].M++; if(code==='T')metrics[t.id].T++;
+          if(fest)metrics[t.id].festivos++; if(isDom)metrics[t.id].domingos++;
+          if(isSab||isDom)metrics[t.id].findes++;
+        });
+      });
+      ['N','findes','festivos','domingos','horas','M','T'].forEach(k=>{
+        const vals=ts.map(t=>metrics[t.id][k]);
         const mn=Math.min(...vals), mx=Math.max(...vals);
-        const peso = k==='N'?5:k==='findes'?4:k==='festivos'?3:k==='domingos'?3:k==='horas'?2:1;
+        const peso=k==='N'?5:k==='findes'?4:k==='festivos'?3:k==='domingos'?3:k==='horas'?2:1;
         c += (mx-mn)*peso;
       });
     });
     return c;
   };
-  let costePrev = costoGlobal();
+  let costePrev = costoReal();
   for(let iter=0;iter<maxIter;iter++){
     let mejoro=false;
     for(const d of dias){
       const ds=fmt(d);
       const activos=state.trabajadores.filter(t=>t.activo);
-      // A) Intercambio: dos personas del mismo rol con turnos distintos
+      // A) Intercambio
       for(let i=0;i<activos.length;i++){
         for(let j=i+1;j<activos.length;j++){
           const a=activos[i], b=activos[j];
@@ -1879,52 +2005,58 @@ function mejoraLocalIntercambios(m, dias, acum, cfg, pesos){
           if(ai.bloqueado||bj.bloqueado) continue;
           if(ai.turno===bj.turno) continue;
           if(!turnoEsTrabajo(ai.turno)||!turnoEsTrabajo(bj.turno)) continue;
-          // verificar legalidad cruzada
-          if(!a.preferencias.turnosPermitidos.includes(bj.turno)) continue;
-          if(!b.preferencias.turnosPermitidos.includes(ai.turno)) continue;
-          if(!esLegalAsignar(a,bj.turno,d,m,cfg)) continue;
-          if(!esLegalAsignar(b,ai.turno,d,m,cfg)) continue;
-          // aplicar intercambio temporalmente
+          stats.intentos++;
+          // Verificar con puedeAsignarse (simulación)
+          const resA=puedeAsignarse(a,bj.turno,ds,m,cfg,{ignorarCeldaActual:true});
+          const resB=puedeAsignarse(b,ai.turno,ds,m,cfg,{ignorarCeldaActual:true});
+          if(!resA.permitido||!resB.permitido){stats.rechazadas++;continue;}
+          // Aplicar temporalmente
           const tA=ai.turno, tB=bj.turno;
-          const tnA=turnoPorCode(tA), tnB=turnoPorCode(tB);
-          acum[a.id][tA]--; acum[a.id][tB]++; acum[a.id].horas+=(tnB.horas||0)-(tnA.horas||0);
-          acum[b.id][tB]--; acum[b.id][tA]++; acum[b.id].horas+=(tnA.horas||0)-(tnB.horas||0);
-          const costeNuevo=costoGlobal();
-          if(costeNuevo<costePrev){
-            // aceptar
-            setAsig(m,a.id,ds,tB,{origen:ORIGEN_AUTO}); setAsig(m,b.id,ds,tA,{origen:ORIGEN_AUTO});
-            costePrev=costeNuevo; mejoras++; mejoro=true;
+          setAsig(m,a.id,ds,tB,{origen:ORIGEN_AUTO}); setAsig(m,b.id,ds,tA,{origen:ORIGEN_AUTO});
+          const costeNuevo=costoReal();
+          // Verificar cobertura del día
+          const covDia=coberturaDia(m,parse(ds));
+          if(costeNuevo<costePrev && covDia.estado!=='bad'){
+            costePrev=costeNuevo; stats.aceptadas++; mejoro=true;
           } else {
-            // revertir acum
-            acum[a.id][tA]++; acum[a.id][tB]--; acum[a.id].horas-=(tnB.horas||0)-(tnA.horas||0);
-            acum[b.id][tB]++; acum[b.id][tA]--; acum[b.id].horas-=(tnA.horas||0)-(tnB.horas||0);
+            // revertir
+            setAsig(m,a.id,ds,tA,{origen:ORIGEN_AUTO}); setAsig(m,b.id,ds,tB,{origen:ORIGEN_AUTO});
+            stats.rechazadas++;
           }
         }
       }
-      // B) Reasignación: mover asignación auto a persona libre del mismo rol
+      // B) Reasignación
       for(const a of activos){
         const ai=getAsig(m,a.id,ds);
         if(!ai||ai.origen!==ORIGEN_AUTO||ai.bloqueado||!turnoEsTrabajo(ai.turno)) continue;
-        const cand=activos.filter(b=>b.id!==a.id&&b.rol===a.rol&&!getAsig(m,b.id,ds)&&b.preferencias.turnosPermitidos.includes(ai.turno)&&esLegalAsignar(b,ai.turno,d,m,cfg));
-        if(!cand.length) continue;
-        const tCode=ai.turno, tn=turnoPorCode(tCode);
+        const cand=activos.filter(b=>b.id!==a.id&&b.rol===a.rol&&!getAsig(m,b.id,ds));
         for(const b of cand){
-          acum[a.id][tCode]--; acum[a.id].horas-=(tn.horas||0);
-          acum[b.id][tCode]++; acum[b.id].horas+=(tn.horas||0);
-          const costeNuevo=costoGlobal();
-          if(costeNuevo<costePrev){
-            delAsig(m,a.id,ds); setAsig(m,b.id,ds,tCode,{origen:ORIGEN_AUTO});
-            costePrev=costeNuevo; mejoras++; mejoro=true; break;
+          stats.intentos++;
+          const resB=puedeAsignarse(b,ai.turno,ds,m,cfg,{ignorarCeldaActual:true});
+          if(!resB.permitido){stats.rechazadas++;continue;}
+          const tCode=ai.turno;
+          delAsig(m,a.id,ds); setAsig(m,b.id,ds,tCode,{origen:ORIGEN_AUTO});
+          const costeNuevo=costoReal();
+          const covDia=coberturaDia(m,parse(ds));
+          if(costeNuevo<costePrev && covDia.estado!=='bad'){
+            costePrev=costeNuevo; stats.aceptadas++; mejoro=true; break;
           } else {
-            acum[a.id][tCode]++; acum[a.id].horas+=(tn.horas||0);
-            acum[b.id][tCode]--; acum[b.id].horas-=(tn.horas||0);
+            delAsig(m,b.id,ds); setAsig(m,a.id,ds,tCode,{origen:ORIGEN_AUTO});
+            stats.rechazadas++;
           }
         }
       }
     }
     if(!mejoro) break;
   }
-  return mejoras;
+  // Verificación final: no empeorar
+  const valDespues = validarCuadrante(curAnyo, curMesIdx);
+  if(valDespues.errores.length > erroresAntes){
+    m.asignaciones = snapAntes;
+    stats.restauradaPorSeguridad = true;
+    stats.aceptadas = 0;
+  }
+  return stats;
 }
 function deshacerGeneracion(){
   const h = state.historialGeneraciones[state.historialGeneraciones.length-1];
@@ -2077,10 +2209,17 @@ function addTrabajador(){
 }
 function toggleActivoTrab(id,v){ const t=state.trabajadores.find(x=>x.id===id); if(t){t.activo=v;save(state);} }
 function delTrabajador(id){
-  if(!confirm('¿Eliminar este trabajador y todas sus asignaciones?')) return;
-  state.trabajadores=state.trabajadores.filter(t=>t.id!==id);
-  state.ausencias=state.ausencias.filter(a=>a.trabajadorId!==id);
-  Object.keys(state.cuadrantes).forEach(y=>{ const a=state.cuadrantes[y]; for(let i=0;i<12;i++){ const m=a.meses[i]; if(m&&m.asignaciones) Object.keys(m.asignaciones).forEach(k=>{ if(k.startsWith(id+'_')) delete m.asignaciones[k]; }); } });
+  const t=state.trabajadores.find(x=>x.id===id); if(!t) return;
+  // Contar lo que se borrará
+  let nAsig=0, nAus=(state.ausencias||[]).filter(a=>a.trabajadorId===id).length;
+  let nDesc=(state.descansosPendientes||[]).filter(dp=>dp.tid===id).length;
+  const prefijo = id + '_';
+  Object.keys(state.cuadrantes).forEach(y=>{ const a=state.cuadrantes[y]; for(let i=0;i<12;i++){ const m=a.meses[i]; if(m&&m.asignaciones) Object.keys(m.asignaciones).forEach(k=>{ if(k.startsWith(prefijo)) nAsig++; }); } });
+  if(!confirm(`¿Eliminar a ${t.nombreCompleto}?\n\nSe borrarán:\n• ${nAsig} asignaciones\n• ${nAus} ausencias\n• ${nDesc} descansos pendientes\n\nNo se puede deshacer.`)) return;
+  state.trabajadores=state.trabajadores.filter(x=>x.id!==id);
+  state.ausencias=(state.ausencias||[]).filter(a=>a.trabajadorId!==id);
+  state.descansosPendientes=(state.descansosPendientes||[]).filter(dp=>dp.tid!==id);
+  Object.keys(state.cuadrantes).forEach(y=>{ const a=state.cuadrantes[y]; for(let i=0;i<12;i++){ const m=a.meses[i]; if(m&&m.asignaciones) Object.keys(m.asignaciones).forEach(k=>{ if(k.startsWith(prefijo)) delete m.asignaciones[k]; }); } });
   save(state); openTrabajadores();
 }
 function editTrabajador(id){
