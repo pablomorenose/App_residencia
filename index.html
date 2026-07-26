@@ -1249,6 +1249,7 @@ function renderMes(){
     <h2>${MESES_NOM[curMesIdx]} ${curAnyo}</h2>
     <button class="btn sm" onclick="cambiarMes(1)" title="Mes siguiente">›</button>
     <span class="range-pill">${fmt(parse(m.inicio))} → ${fmt(parse(m.fin))}</span>
+    <button class="btn primary sm" onclick="aplicarCadenciaGlobalEnMes(getMes(curAnyo,curMesIdx));save(state);renderMes()">⚙ Generar</button>
     <button class="btn sm" onclick="clearMes()">🧹 Limpiar</button>
     <button class="btn sm" onclick="defineRangoMes(${curMesIdx})">Editar rango</button>
     <button class="btn sm" onclick="exportPDF()">🖨 PDF</button>
