@@ -313,18 +313,13 @@ html[data-theme="dark"] .tbl th{ background:#262b35;}
   <button class="btn sm ghost no-print" onclick="openCentro()">Centro</button>
   <button class="btn sm ghost no-print" onclick="openTrabajadores()">Cuidadoras</button>
   <button class="btn sm ghost no-print" onclick="openCadenciaGlobal()">Cadencia</button>
-  <button class="btn sm ghost no-print" onclick="openCoberturas()">Coberturas</button>
-  <button class="btn sm ghost no-print" onclick="openAusencias()">Ausencias</button>
-  <button class="btn sm ghost no-print" onclick="openPlantillas()">Plantillas</button>
   <button class="btn sm ghost no-print" onclick="openFestivos()">Festivos</button>
-  <button class="btn sm ghost no-print" onclick="openConfig()">Configuración</button>
-  <button class="btn sm ghost no-print" onclick="openInformes()">Informes</button>
+  <button class="btn sm ghost no-print" onclick="openAusencias()">Ausencias</button>
   <button class="btn sm ghost no-print" onclick="exportJSON()">Backup</button>
   <label class="btn sm ghost no-print" style="cursor:pointer;">Importar
     <input type="file" accept="application/json" style="display:none;" onchange="importJSON(event)">
   </label>
   <button class="btn sm ghost no-print" onclick="toggleTema()" id="themeBtn" title="Modo oscuro">🌙</button>
-  <button class="btn sm ghost no-print" onclick="borrarTodo()">Reset</button>
 </header>
 
 <main>
@@ -1253,23 +1248,17 @@ function renderMes(){
     <button class="btn sm" onclick="cambiarMes(-1)" title="Mes anterior">‹</button>
     <h2>${MESES_NOM[curMesIdx]} ${curAnyo}</h2>
     <button class="btn sm" onclick="cambiarMes(1)" title="Mes siguiente">›</button>
-    <span class="range-pill">${fmt(parse(m.inicio))} → ${fmt(parse(m.fin))} (${state.centro.modoMes})</span>
-    <label class="chk-pill ${_vistaMes.mostrarInactivos?'on':''}"><input type="checkbox" ${_vistaMes.mostrarInactivos?'checked':''} onchange="_vistaMes.mostrarInactivos=this.checked;renderMes()"> Inactivos</label>
-    <button class="btn primary sm" onclick="generarConUI()">⚙ Generar</button>
-    <button class="btn sm" onclick="deshacerGeneracion()" title="Deshacer última generación">↶ Deshacer</button>
-    <button class="btn sm" onclick="compararVersiones()" title="Comparar con la última generación">🔍 Comparar</button>
-    <button class="btn sm" onclick="openVistaDiaria()">📆 Vista diaria</button>
+    <span class="range-pill">${fmt(parse(m.inicio))} → ${fmt(parse(m.fin))}</span>
     <button class="btn sm" onclick="clearMes()">🧹 Limpiar</button>
     <button class="btn sm" onclick="defineRangoMes(${curMesIdx})">Editar rango</button>
     <button class="btn sm" onclick="exportPDF()">🖨 PDF</button>
   </div>`;
 
   const contadores = renderContadores(m, dias);
-  const cobertura = renderCoberturaMes(m, dias, covPorDia);
 
   const cont = document.getElementById('mes-content');
   cont.innerHTML = bar;
-  const layout = document.createElement('div'); layout.className = 'mes-layout'+(_vistaMes.panelAlertas?'':' closed');
+  const layout = document.createElement('div'); layout.className = 'mes-layout closed';
   const mesMain = document.createElement('div'); mesMain.className='mes-main';
   const printArea = document.createElement('div'); printArea.className='print-area';
   printArea.innerHTML = `<div class="print-title">${escaparHTML(state.centro.nombre)} — ${MESES_NOM[curMesIdx]} ${curAnyo}</div>`;
@@ -1277,15 +1266,10 @@ function renderMes(){
   printArea.appendChild(wrap); printArea.insertAdjacentHTML('beforeend', legendHtml);
   mesMain.appendChild(printArea);
   const noprint = document.createElement('div'); noprint.className='no-print';
-  noprint.innerHTML = cobertura + contadores;
+  noprint.innerHTML = contadores;
   mesMain.appendChild(noprint);
   layout.appendChild(mesMain);
-  // panel alertas
-  const panel = document.createElement('div'); panel.className='alerts-panel no-print';
-  panel.id='alertsPanel';
-  layout.appendChild(panel);
   cont.appendChild(layout);
-  renderAlertasPanel();
   habilitarAtajos();
   habilitarSeleccionMultiple();
 }
@@ -2730,10 +2714,13 @@ function aplicarCadenciaGlobalEnMes(m){
     dias.forEach(d=>{
       const ds = fmt(d);
       const cur = getAsig(m, t.id, ds);
-      // No sobrescribir ausencias ni asignaciones manuales
-      if(cur && (cur.origen===ORIGEN_AUSENCIA || cur.origen===ORIGEN_MANUAL)) return;
+      // No sobrescribir ausencias (VAC/BAJ/PER)
+      if(cur && cur.origen===ORIGEN_AUSENCIA) return;
       // Calcular posición en el ciclo: días desde ancla + desfase por posición
-      const diasDesdeAncla = diasCalendarioEntre(cg.fechaAncla, ds) - 1;
+      const dAncla = parse(cg.fechaAncla);
+      let diasDesdeAncla = 0;
+      if(d >= dAncla){ let tmp=new Date(dAncla); while(tmp<d){diasDesdeAncla++;tmp=addDays(tmp,1);} }
+      else { let tmp=new Date(d); while(tmp<dAncla){diasDesdeAncla--;tmp=addDays(tmp,1);} }
       const idx = (((diasDesdeAncla + posicion) % len) + len) % len;
       const code = cg.secuencia[idx];
       if(!code) return;
