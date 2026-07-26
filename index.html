@@ -1249,7 +1249,7 @@ function renderMes(){
     <h2>${MESES_NOM[curMesIdx]} ${curAnyo}</h2>
     <button class="btn sm" onclick="cambiarMes(1)" title="Mes siguiente">›</button>
     <span class="range-pill">${fmt(parse(m.inicio))} → ${fmt(parse(m.fin))}</span>
-    <button class="btn primary sm" onclick="aplicarCadenciaGlobalEnMes(getMes(curAnyo,curMesIdx));save(state);renderMes()">⚙ Generar</button>
+    <button class="btn primary sm" onclick="generarMes()">⚙ Generar</button>
     <button class="btn sm" onclick="clearMes()">🧹 Limpiar</button>
     <button class="btn sm" onclick="defineRangoMes(${curMesIdx})">Editar rango</button>
     <button class="btn sm" onclick="exportPDF()">🖨 PDF</button>
@@ -2695,6 +2695,20 @@ function guardarCadenciaGlobal(){
   closeModal();
   if(curMesIdx!==null) renderMes();
   alert(activa ? `Cadencia aplicada: ${seq.join('-')} (${seq.length} días de ciclo) a ${state.trabajadores.filter(t=>t.activo).length} cuidadoras.` : 'Cadencia global desactivada.');
+}
+function generarMes(){
+  const cg = state.config.cadenciaGlobal;
+  if(!cg || !cg.activa || !cg.secuencia || !cg.secuencia.length || !cg.fechaAncla){
+    alert('Primero configura la cadencia global.\n\nPulsa el botón "Cadencia" en la barra superior, define la secuencia (ej: M-M-T-T-N-L-L) y la fecha de inicio.');
+    return;
+  }
+  const m = getMes(curAnyo, curMesIdx);
+  if(!m || !m.inicio || !m.fin){ alert('Define primero el rango del mes.'); return; }
+  aplicarCadenciaGlobalEnMes(m);
+  save(state);
+  renderMes();
+  const activas = state.trabajadores.filter(t=>t.activo).length;
+  alert(`Cuadrante generado: cadencia ${cg.secuencia.join('-')} aplicada a ${activas} cuidadoras.`);
 }
 function aplicarCadenciaGlobalATodo(){
   const cg = state.config.cadenciaGlobal;
