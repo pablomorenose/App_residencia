@@ -543,24 +543,25 @@ function load(){
 function migrate(s){
   if(!s.version || s.version < 3){
     // convertir asignaciones de string -> objeto
-    (s.cuadrantes||{}).forEach==null; // noop guard
-    Object.keys(s.cuadrantes||{}).forEach(y=>{
-      const a = s.cuadrantes[y];
-      (a.meses||{});
-      Object.keys(a.meses||{}).forEach(idx=>{
-        const m = a.meses[idx];
-        if(!m) return;
-        if(!m.notasDia) m.notasDia = {};
-        if(m.asignaciones){
-          Object.keys(m.asignaciones).forEach(k=>{
-            const v = m.asignaciones[k];
-            if(typeof v === 'string'){
-              m.asignaciones[k] = { turno:v, origen: ORIGEN_MANUAL, bloqueado:false, nota:'', actualizadoEn:'', actualizadoPor:'' };
-            }
-          });
-        }
+    if(s.cuadrantes && typeof s.cuadrantes === 'object' && !Array.isArray(s.cuadrantes)){
+      Object.keys(s.cuadrantes).forEach(y=>{
+        const a = s.cuadrantes[y];
+        if(!a || !a.meses) return;
+        Object.keys(a.meses).forEach(idx=>{
+          const m = a.meses[idx];
+          if(!m) return;
+          if(!m.notasDia) m.notasDia = {};
+          if(m.asignaciones){
+            Object.keys(m.asignaciones).forEach(k=>{
+              const v = m.asignaciones[k];
+              if(typeof v === 'string'){
+                m.asignaciones[k] = { turno:v, origen: ORIGEN_MANUAL, bloqueado:false, nota:'', actualizadoEn:'', actualizadoPor:'' };
+              }
+            });
+          }
+        });
       });
-    });
+    }
     s.version = 3;
   }
   // rellenar campos nuevos
@@ -613,9 +614,36 @@ function migrate(s){
   }
   s.actualizadoEn = s.actualizadoEn || nowISO();
   s.actualizadoPor = s.actualizadoPor || 'local';
+  // Normalizar estructura final
+  normalizarEstado(s);
+}
+// Normalización segura: garantiza estructura sin borrar datos
+function normalizarEstado(s){
+  if(!s) return;
+  if(!s.cuadrantes || typeof s.cuadrantes !== 'object' || Array.isArray(s.cuadrantes)) s.cuadrantes = s.cuadrantes && typeof s.cuadrantes === 'object' && !Array.isArray(s.cuadrantes) ? s.cuadrantes : {};
+  Object.keys(s.cuadrantes).forEach(y=>{
+    const a = s.cuadrantes[y];
+    if(!a || typeof a !== 'object'){ s.cuadrantes[y] = { meses:{} }; return; }
+    if(!a.meses || typeof a.meses !== 'object') a.meses = {};
+    for(let i=0;i<12;i++){
+      if(!a.meses[i]) a.meses[i] = {};
+      const m = a.meses[i];
+      if(m.idx === undefined) m.idx = i;
+      if(!m.hasOwnProperty('inicio')) m.inicio = null;
+      if(!m.hasOwnProperty('fin')) m.fin = null;
+      if(!m.asignaciones || typeof m.asignaciones !== 'object') m.asignaciones = {};
+      if(!m.notasDia || typeof m.notasDia !== 'object') m.notasDia = {};
+    }
+  });
+  if(!s.trabajadores) s.trabajadores = [];
+  if(!s.festivos) s.festivos = [];
+  if(!s.ausencias) s.ausencias = [];
+  if(!s.config) s.config = defaultConfig();
+  if(!s.centro) s.centro = defaultState().centro;
 }
 function save(s, opts){
   if(s) state = s;
+  normalizarEstado(state);
   state.actualizadoEn = nowISO();
   // backup rotatorio (no en cada save silencioso para no llenar)
   if(!opts || !opts.silent){
@@ -629,7 +657,7 @@ function save(s, opts){
     }catch(e){ console.warn('backup rotation failed', e); }
     actualizarSavedTag();
   }
-  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){ console.warn('save error',e); }
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){ console.warn('save error',e); alert('⚠️ Error al guardar en este navegador. Exporta una copia JSON inmediatamente.'); }
 }
 function actualizarSavedTag(){
   const el = document.getElementById('savedTag');
@@ -807,7 +835,6 @@ function defineRangoMes(idx){
   const m = getMes(curAnyo, idx);
   const sug = rangoSugerido(curAnyo, idx);
   let sIni = sug.ini, sFin = sug.fin;
-  // ajustes por meses contiguos definidos (continuidad)
   const prev = state.cuadrantes[curAnyo].meses[idx-1];
   if(prev && prev.fin) sIni = fmt(addDays(parse(prev.fin),1));
   const next = state.cuadrantes[curAnyo].meses[idx+1];
@@ -819,11 +846,57 @@ function defineRangoMes(idx){
   ],(vals)=>{
     if(!vals.ini||!vals.fin){ alert('Indica ambas fechas.'); return false; }
     if(parse(vals.fin) < parse(vals.ini)){ alert('La fecha fin debe ser posterior a la inicio.'); return false; }
+    // Validación según modo
+    const v = validarRangoPeriodo(curAnyo, idx, vals.ini, vals.fin);
+    if(v.errores.length){ alert('Errores:\n\n• '+v.errores.join('\n• ')); return false; }
+    if(v.advertencias.length){
+      if(!confirm('Avisos:\n\n• '+v.advertencias.join('\n• ')+'\n\n¿Guardar de todos modos?')) return false;
+    }
     m.inicio=vals.ini; m.fin=vals.fin; save(state);
     proyectarAusenciasEnMes(m);
     aplicarDescansosPendientesEnMes(m);
-    renderAnio(); renderMes();
+    closeModal();
+    curMesIdx = idx; showView('mes'); renderMes();
+    localStorage.setItem('cuadrantes_last_view', JSON.stringify({anyo:curAnyo, mesIdx:idx}));
   });
+}
+function validarRangoPeriodo(anyo, idx, inicio, fin){
+  const errores=[], advertencias=[];
+  const dIni=parse(inicio), dFin=parse(fin);
+  const modo = state.centro.modoMes || 'natural';
+  if(modo==='operativo'){
+    if(dIni.getDay()!==1) errores.push(`Inicio debe ser lunes (has puesto ${DIAS_LET[dIni.getDay()]}).`);
+    if(dFin.getDay()!==0) errores.push(`Fin debe ser domingo (has puesto ${DIAS_LET[dFin.getDay()]}).`);
+    const totalDias = Math.round((dFin-dIni)/86400000)+1;
+    if(totalDias%7!==0) errores.push(`Duración debe ser múltiplo de 7 días (ahora son ${totalDias}).`);
+  }
+  // solapes con otros periodos
+  const a = state.cuadrantes[anyo];
+  if(a){
+    for(let i=0;i<12;i++){
+      if(i===idx) continue;
+      const other = a.meses[i]; if(!other||!other.inicio||!other.fin) continue;
+      const oI=parse(other.inicio), oF=parse(other.fin);
+      if(dIni<=oF && dFin>=oI) errores.push(`Se solapa con ${MESES_NOM[i]} (${other.inicio} → ${other.fin}).`);
+    }
+  }
+  // huecos
+  if(a){
+    for(let i=0;i<12;i++){
+      if(i===idx) continue;
+      const other = a.meses[i]; if(!other||!other.inicio||!other.fin) continue;
+      const oF=parse(other.fin), oI2=parse(other.inicio);
+      if(oF<dIni){
+        const gap=Math.round((dIni-addDays(oF,1))/86400000);
+        if(gap>0) advertencias.push(`Hueco de ${gap} día(s) entre ${MESES_NOM[i]} y este periodo.`);
+      }
+      if(oI2>dFin){
+        const gap=Math.round((oI2-addDays(dFin,1))/86400000);
+        if(gap>0) advertencias.push(`Hueco de ${gap} día(s) entre este periodo y ${MESES_NOM[i]}.`);
+      }
+    }
+  }
+  return {valido:errores.length===0, errores, advertencias};
 }
 
 /* ---- Vista Mes ---- */
@@ -1172,12 +1245,40 @@ function renderContadores(m, dias){
       </div></div>`;
   }).join('');
   return `<div class="section-title">Contadores anuales ${curAnyo} <span style="font-weight:400;color:var(--muted);font-size:12px;">(atribución por mes natural · acumulado de meses definidos)</span><span class="line"></span></div>
-    <div class="counters">${cards}</div>`;
+    <div class="counters">${cards}</div>${renderEquidadPorRol(curAnyo)}`;
 }
 function monthOfYearProgress(anyo){
   const a=state.cuadrantes[anyo]; if(!a) return 0;
   let defined=0; for(let i=0;i<12;i++){ if(a.meses[i]&&a.meses[i].inicio&&a.meses[i].fin) defined++; }
   return defined/12;
+}
+// Resumen de equidad por rol (para mostrar tras generación y en contadores)
+function calcularResumenEquidadPorRol(anyo){
+  const stats=calcularStatsAnyo(anyo);
+  const roles=[...new Set(state.trabajadores.filter(t=>t.activo).map(t=>t.rol))];
+  const lines=[];
+  roles.forEach(rol=>{
+    const ts=state.trabajadores.filter(t=>t.activo&&t.rol===rol);
+    if(ts.length<2) return;
+    const vals=k=>ts.map(t=>(stats[t.id]&&stats[t.id][k])||0);
+    const rng=k=>{const v=vals(k);return Math.min(...v)+'–'+Math.max(...v);};
+    lines.push(`${rol} · Horas: ${rng('horas')} · N: ${rng('N')} · Findes: ${rng('findes')} · Festivos: ${rng('festivos')}`);
+  });
+  return lines.length ? 'Equidad por rol:\n'+lines.join('\n') : '';
+}
+function renderEquidadPorRol(anyo){
+  const stats=calcularStatsAnyo(anyo);
+  const roles=[...new Set(state.trabajadores.filter(t=>t.activo).map(t=>t.rol))];
+  if(!roles.length) return '';
+  const items=roles.map(rol=>{
+    const ts=state.trabajadores.filter(t=>t.activo&&t.rol===rol);
+    if(ts.length<2) return '';
+    const vals=k=>ts.map(t=>(stats[t.id]&&stats[t.id][k])||0);
+    const rng=(k)=>{const v=vals(k);const mn=Math.min(...v),mx=Math.max(...v);const diff=mx-mn;const color=diff>3?'var(--red)':(diff>1?'var(--amber)':'var(--ok)');return `<span style="color:${color};font-weight:${diff>2?700:400};">${mn}–${mx}</span>`;};
+    return `<div style="font-size:12px;margin:2px 0;"><b>${escaparHTML(rol)}</b> · Horas: ${rng('horas')} · N: ${rng('N')} · Findes: ${rng('findes')} · Fest: ${rng('festivos')} · Dom: ${rng('domingos')}</div>`;
+  }).filter(Boolean).join('');
+  return `<div style="margin-top:10px;padding:8px 12px;background:#f8f9fb;border:1px solid var(--line);border-radius:8px;">
+    <div style="font-weight:700;font-size:13px;margin-bottom:4px;">⚖ Equidad anual por rol</div>${items}</div>`;
 }
 
 /* ============ POPOVER TURNOS (Fase 1) ============ */
@@ -1562,7 +1663,7 @@ function generarConUI(){
   const html = `<h3>⚙ Generar planificación</h3>
     <p class="hint">Se conservarán ausencias, celdas manuales bloqueadas y turnos fijos. Se proyectan ausencias y se aplica la secuencia N→S→L si está activada.</p>
     <div class="row"><label class="sm">Semilla</label><input type="number" id="gen-seed" value="${Math.floor(Math.random()*1e9)}"></div>
-    <div class="row"><label class="sm">Fase de mejora local</label><label class="chk-pill on"><input type="checkbox" id="gen-local" checked> Activar intercambios para equilibrar</label></div>
+    <div class="row"><label class="sm">Fase de mejora local</label><label class="chk-pill on"><input type="checkbox" id="gen-local" checked> Mejora local: intercambios y reasignaciones legales para equilibrar</label></div>
     <div class="actions"><button class="btn" onclick="closeModal()">Cancelar</button>
       <button class="btn primary" onclick="runGenerar()">Generar</button></div>`;
   openModal(html);
@@ -1632,8 +1733,9 @@ function generarAutomatico(seed, mejoraLocal){
     });
   });
 
-  // Fase 2: mejora local por semana (intercambios)
-  if(mejoraLocal) mejoraLocalIntercambios(m, dias, acum, cfg, pesos);
+  // Fase 2: mejora local (intercambios y reasignaciones legales)
+  let mejorasAplicadas = 0;
+  if(mejoraLocal) mejorasAplicadas = mejoraLocalIntercambios(m, dias, acum, cfg, pesos);
 
   // Historial con snapshot
   state.historialGeneraciones.push({fecha:nowISO(), anyo, mes:idx, seed, snapshot:snap});
@@ -1641,9 +1743,14 @@ function generarAutomatico(seed, mejoraLocal){
   save(state);
 
   const val = validarCuadrante(anyo, idx);
+  // Equity summary by role
+  const equidadResumen = calcularResumenEquidadPorRol(anyo);
   let msg = `Generación completada (semilla ${seed}).`;
-  if(noCubiertas.length) msg += `\n\nNo se pudo cubrir ${noCubiertas.length} necesidad(es):\n`+noCubiertas.slice(0,10).join('\n')+(noCubiertas.length>10?`\n...y ${noCubiertas.length-10} más`:'');
-  if(val.errores.length) msg += `\n\nQuedan ${val.errores.length} error(es) tras la generación. Revisa el panel de alertas.`;
+  if(noCubiertas.length) msg += `\nCobertura pendiente: ${noCubiertas.length} necesidad(es).`;
+  if(val.errores.length) msg += `\nErrores de validación: ${val.errores.length}.`;
+  msg += '\n'+equidadResumen;
+  if(mejorasAplicadas>0) msg += `\nMejoras locales aplicadas: ${mejorasAplicadas}.`;
+  if(noCubiertas.length>0) msg += '\n\nDetalle:\n'+noCubiertas.slice(0,8).join('\n')+(noCubiertas.length>8?`\n...y ${noCubiertas.length-8} más`:'');
   alert(msg);
   renderMes();
 }
@@ -1715,6 +1822,14 @@ function esLegalAsignar(t, code, d, m, cfg){
   if(code==='N'){ let c=0, off=-1; while(codMes(off)==='N'){ c++; off--; } if(c>=cfg.maxNochesConsecutivas) return false; }
   if(!cfg.permitirIncompatibles){ if((code==='M'||code==='T') && cod(-1)==='N') return false; }
   if(cfg.secuenciaNocheObligatoria && code!=='N' && cod(-1)==='N' && code!=='S') return false;
+  // Descanso tras noche (independiente de N-S-L): si ayer fue N, hoy necesita descanso
+  const minDesc = (t.preferencias.minDescansosTrasNoche!=null) ? t.preferencias.minDescansosTrasNoche : (cfg.minDescansosTrasNoche||1);
+  if(turnoEsTrabajo(code) && code!=='N'){
+    for(let off=1; off<=minDesc; off++){
+      const codPrev = cod(-off);
+      if(codPrev==='N') return false; // hay una N dentro del período de descanso requerido
+    }
+  }
   return true;
 }
 function ultimosDiasTrabajados(m, tid, d){
@@ -1728,31 +1843,88 @@ function actualizarAcum(acum, tid, code, d){
   const ds=fmt(d); const fest=state.festivos.find(f=>f.fecha===ds);
   if(fest)a.festivos++; if(d.getDay()===0)a.domingos++; if(d.getDay()===0||d.getDay()===6)a.findes++;
 }
-// Mejora local: por semana, intentar intercambiar turnos entre compatibles si reduce desigualdad
+// Mejora local: intercambios y reasignaciones automáticas legales para equilibrar
 function mejoraLocalIntercambios(m, dias, acum, cfg, pesos){
-  // agrupar días en semanas (lun-dom) dentro del rango
-  const lunes=dias.filter(d=>d.getDay()===1);
-  lunes.forEach(l=>{
-    const semana=diasEntre(l, addDays(l,6)).filter(dd=> dias.some(x=>fmt(x)===fmt(dd)));
-    semana.forEach(d=>{
+  const roles = [...new Set(state.trabajadores.filter(t=>t.activo).map(t=>t.rol))];
+  let mejoras = 0;
+  const maxIter = 200;
+  const costoGlobal = ()=>{
+    let c=0;
+    roles.forEach(rol=>{
+      const ts=state.trabajadores.filter(t=>t.activo&&t.rol===rol);
+      if(ts.length<2) return;
+      ['N','horas','findes','festivos','domingos','M','T'].forEach(k=>{
+        const vals=ts.map(t=>acum[t.id]?acum[t.id][k]||0:0);
+        const mn=Math.min(...vals), mx=Math.max(...vals);
+        const peso = k==='N'?5:k==='findes'?4:k==='festivos'?3:k==='domingos'?3:k==='horas'?2:1;
+        c += (mx-mn)*peso;
+      });
+    });
+    return c;
+  };
+  let costePrev = costoGlobal();
+  for(let iter=0;iter<maxIter;iter++){
+    let mejoro=false;
+    for(const d of dias){
       const ds=fmt(d);
-      // por cada par de trabajadores con turnos equivalentes (M<->M, T<->T), ver si intercambio mejora equidad de horas
-      const activos = state.trabajadores.filter(t=>t.activo);
+      const activos=state.trabajadores.filter(t=>t.activo);
+      // A) Intercambio: dos personas del mismo rol con turnos distintos
       for(let i=0;i<activos.length;i++){
         for(let j=i+1;j<activos.length;j++){
           const a=activos[i], b=activos[j];
-          const ca=getCodigo(m,a.id,ds), cb=getCodigo(m,b.id,ds);
-          if(!ca||!cb) continue;
-          if(ca!==cb) continue; // solo mismo turno
+          if(a.rol!==b.rol) continue;
           const ai=getAsig(m,a.id,ds), bj=getAsig(m,b.id,ds);
-          if((ai&&ai.origen!==ORIGEN_AUTO)||(bj&&bj.origen!==ORIGEN_AUTO)) continue;
-          if((ai&&ai.bloqueado)||(bj&&bj.bloqueado)) continue;
-          // no mejora nada si son iguales; skip
+          if(!ai||!bj) continue;
+          if(ai.origen!==ORIGEN_AUTO||bj.origen!==ORIGEN_AUTO) continue;
+          if(ai.bloqueado||bj.bloqueado) continue;
+          if(ai.turno===bj.turno) continue;
+          if(!turnoEsTrabajo(ai.turno)||!turnoEsTrabajo(bj.turno)) continue;
+          // verificar legalidad cruzada
+          if(!a.preferencias.turnosPermitidos.includes(bj.turno)) continue;
+          if(!b.preferencias.turnosPermitidos.includes(ai.turno)) continue;
+          if(!esLegalAsignar(a,bj.turno,d,m,cfg)) continue;
+          if(!esLegalAsignar(b,ai.turno,d,m,cfg)) continue;
+          // aplicar intercambio temporalmente
+          const tA=ai.turno, tB=bj.turno;
+          const tnA=turnoPorCode(tA), tnB=turnoPorCode(tB);
+          acum[a.id][tA]--; acum[a.id][tB]++; acum[a.id].horas+=(tnB.horas||0)-(tnA.horas||0);
+          acum[b.id][tB]--; acum[b.id][tA]++; acum[b.id].horas+=(tnA.horas||0)-(tnB.horas||0);
+          const costeNuevo=costoGlobal();
+          if(costeNuevo<costePrev){
+            // aceptar
+            setAsig(m,a.id,ds,tB,{origen:ORIGEN_AUTO}); setAsig(m,b.id,ds,tA,{origen:ORIGEN_AUTO});
+            costePrev=costeNuevo; mejoras++; mejoro=true;
+          } else {
+            // revertir acum
+            acum[a.id][tA]++; acum[a.id][tB]--; acum[a.id].horas-=(tnB.horas||0)-(tnA.horas||0);
+            acum[b.id][tB]++; acum[b.id][tA]--; acum[b.id].horas-=(tnA.horas||0)-(tnB.horas||0);
+          }
         }
       }
-    });
-  });
-  // (mejora local intencionalmente conservadora: no rompe cobertura)
+      // B) Reasignación: mover asignación auto a persona libre del mismo rol
+      for(const a of activos){
+        const ai=getAsig(m,a.id,ds);
+        if(!ai||ai.origen!==ORIGEN_AUTO||ai.bloqueado||!turnoEsTrabajo(ai.turno)) continue;
+        const cand=activos.filter(b=>b.id!==a.id&&b.rol===a.rol&&!getAsig(m,b.id,ds)&&b.preferencias.turnosPermitidos.includes(ai.turno)&&esLegalAsignar(b,ai.turno,d,m,cfg));
+        if(!cand.length) continue;
+        const tCode=ai.turno, tn=turnoPorCode(tCode);
+        for(const b of cand){
+          acum[a.id][tCode]--; acum[a.id].horas-=(tn.horas||0);
+          acum[b.id][tCode]++; acum[b.id].horas+=(tn.horas||0);
+          const costeNuevo=costoGlobal();
+          if(costeNuevo<costePrev){
+            delAsig(m,a.id,ds); setAsig(m,b.id,ds,tCode,{origen:ORIGEN_AUTO});
+            costePrev=costeNuevo; mejoras++; mejoro=true; break;
+          } else {
+            acum[a.id][tCode]++; acum[a.id].horas+=(tn.horas||0);
+            acum[b.id][tCode]--; acum[b.id].horas-=(tn.horas||0);
+          }
+        }
+      }
+    }
+    if(!mejoro) break;
+  }
+  return mejoras;
 }
 function deshacerGeneracion(){
   const h = state.historialGeneraciones[state.historialGeneraciones.length-1];
@@ -2388,7 +2560,8 @@ function comprobarViabilidad(){
 /* ============ PDF + BACKUP ============ */
 function exportPDF(){ window.print(); }
 function exportJSON(){
-  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const exportData = { version: state.version, exportadoEn: nowISO(), nombreCentro: state.centro.nombre || '', estado: state };
+  const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download=`cuadrantes_residencia_${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href);
 }
@@ -2398,11 +2571,20 @@ function importJSON(ev){
   reader.onload=e=>{
     try{
       const s=JSON.parse(e.target.result);
-      if(s.version!==3 && !s.centro){ throw new Error('formato no reconocido'); }
-      if(!confirm('Esto reemplazará todos los datos actuales. ¿Continuar?')) return;
-      migrate(s); save(s); closeModal(); showView('anios');
+      // Soportar formato envuelto {version, exportadoEn, estado:...} y estado directo
+      const datos = s.estado || s;
+      if(!datos || typeof datos !== 'object') throw new Error('formato no reconocido');
+      if(!datos.version && !datos.centro && !datos.cuadrantes) throw new Error('no contiene datos de cuadrantes reconocibles');
+      // Resumen para confirmar
+      const nTrab = (datos.trabajadores||[]).length;
+      const nAnyos = datos.cuadrantes ? Object.keys(datos.cuadrantes).length : 0;
+      const centro = datos.centro ? datos.centro.nombre || '(sin nombre)' : '(sin centro)';
+      if(!confirm(`Importar datos:\n• Centro: ${centro}\n• Trabajadores: ${nTrab}\n• Años: ${nAnyos}\n\nSe creará un backup del estado actual. ¿Continuar?`)) return;
+      // Backup del estado actual antes de reemplazar
+      try{ localStorage.setItem('cuadrantes_pre_import_backup', JSON.stringify(state)); }catch(ex){}
+      migrate(datos); save(datos); closeModal(); showView('anios');
       alert('Datos importados correctamente.');
-    }catch(err){ alert('Archivo no válido: '+err.message); }
+    }catch(err){ alert('Importación fallida: '+err.message+'\n\nEl estado actual no se ha modificado.'); }
   };
   reader.readAsText(f); ev.target.value='';
 }
