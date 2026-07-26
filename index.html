@@ -381,7 +381,7 @@ const BACKUP_KEYS = ['cuadrantes_residencia_backup_1','cuadrantes_residencia_bac
 const MESES_NOM = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DIAS_LET = ['D','L','M','X','J','V','S'];
 const BASICOS = ['M','T','N','S','L','VAC','BAJ','PER'];
-const ORIGEN_MANUAL='manual', ORIGEN_AUTO='automatico', ORIGEN_REGLA='regla', ORIGEN_AUSENCIA='ausencia';
+const ORIGEN_MANUAL='manual', ORIGEN_AUTO='automatico', ORIGEN_REGLA='regla', ORIGEN_AUSENCIA='ausencia', ORIGEN_CADENCIA='cadencia';
 
 /* ============ HELPERS DE SEGURIDAD (Fase 0.1) ============ */
 function escaparHTML(v){ v = (v===null||v===undefined)?'':String(v);
@@ -655,6 +655,7 @@ function normalizarEstado(s){
   // Trabajadores: merge profundo de preferencias y jornada
   const defPref = {turnosPermitidos:['M','T','N'],soloTurnos:false,soloTurnosTipo:'',noTrabajaNoches:false,noTrabajaFinesSemana:false,maxDiasConsecutivos:null,minDescansosTrasNoche:null,diasNoDisponibles:[],restriccionesSemanales:[]};
   const defJor = {horasAnualesObjetivo:1792,horasMensualesObjetivo:null,horasSemanalesObjetivo:40,porcentajeJornada:100};
+  const defCadencia = {activa:false, modo:'bloqueada', secuencia:[], fechaAncla:null, desplazamiento:0, aplicaDesde:null, aplicaHasta:null, politicaAusencia:'calendario-fijo'};
   s.trabajadores.forEach(t=>{
     if(!t.preferencias || typeof t.preferencias !== 'object') t.preferencias = {};
     Object.keys(defPref).forEach(k=>{ if(t.preferencias[k]===undefined) t.preferencias[k]=defPref[k]; });
@@ -664,6 +665,13 @@ function normalizarEstado(s){
     Object.keys(defJor).forEach(k=>{ if(t.jornada[k]===undefined) t.jornada[k]=defJor[k]; });
     if(t.activo===undefined) t.activo = true;
     if(!t.nombreCompleto) t.nombreCompleto = (t.apellidos||'')+', '+(t.nombre||'');
+    // Cadencia: merge con defaults sin sobrescribir datos válidos
+    if(!t.cadencia || typeof t.cadencia !== 'object') t.cadencia = {};
+    Object.keys(defCadencia).forEach(k=>{ if(t.cadencia[k]===undefined) t.cadencia[k]=defCadencia[k]; });
+    if(!Array.isArray(t.cadencia.secuencia)) t.cadencia.secuencia = [];
+    if(typeof t.cadencia.desplazamiento !== 'number') t.cadencia.desplazamiento = 0;
+    if(!['bloqueada','preferente'].includes(t.cadencia.modo)) t.cadencia.modo = 'bloqueada';
+    if(!['calendario-fijo','pausar','reiniciar'].includes(t.cadencia.politicaAusencia)) t.cadencia.politicaAusencia = 'calendario-fijo';
   });
 }
 function save(s, opts){
@@ -836,6 +844,141 @@ function puedeAsignarse(trabajador, code, fechaStr, mes, cfg, opciones){
     }
   }
   return {permitido: motivos.length===0, motivos};
+}
+
+/* ============ CADENCIA FIJA ============ */
+// Calcula el turno de cadencia para un trabajador en una fecha
+function obtenerTurnoCadencia(trabajador, fechaStr){
+  if(!trabajador || !trabajador.cadencia || !trabajador.cadencia.activa) return {aplica:false, code:null, indice:null, motivo:'Cadencia no activa'};
+  const cad = trabajador.cadencia;
+  if(!cad.secuencia || !cad.secuencia.length) return {aplica:false, code:null, indice:null, motivo:'Secuencia vacía'};
+  if(!cad.fechaAncla) return {aplica:false, code:null, indice:null, motivo:'Falta fecha de anclaje'};
+  // Rango de aplicación
+  if(cad.aplicaDesde && fechaStr < cad.aplicaDesde) return {aplica:false, code:null, indice:null, motivo:'Antes de aplicaDesde'};
+  if(cad.aplicaHasta && fechaStr > cad.aplicaHasta) return {aplica:false, code:null, indice:null, motivo:'Después de aplicaHasta'};
+  const len = cad.secuencia.length;
+  // Política: calendario-fijo (default), pausar, reiniciar
+  let indice;
+  if(cad.politicaAusencia === 'pausar'){
+    // Contar días NO ausentes entre ancla y fecha
+    const diasNoAus = contarDiasNoAusentes(trabajador, cad.fechaAncla, fechaStr);
+    indice = ((diasNoAus + (cad.desplazamiento||0)) % len + len) % len;
+  } else if(cad.politicaAusencia === 'reiniciar'){
+    // Buscar última ausencia que termina antes de fechaStr
+    const ultimaAus = buscarUltimaAusenciaAntes(trabajador, fechaStr);
+    if(ultimaAus){
+      const diasDesdeReinicio = diasCalendarioEntre(sumarDiasFecha(ultimaAus.fin,1), fechaStr);
+      indice = diasDesdeReinicio >= 0 ? (diasDesdeReinicio % len) : 0;
+    } else {
+      const diasDesdeAncla = diasCalendarioEntre(cad.fechaAncla, fechaStr);
+      indice = (((diasDesdeAncla<0?diasDesdeAncla%len+len:diasDesdeAncla) + (cad.desplazamiento||0)) % len + len) % len;
+    }
+  } else {
+    // calendario-fijo: posición por fecha
+    const diasDesdeAncla = diasCalendarioEntre(cad.fechaAncla, fechaStr);
+    indice = (((diasDesdeAncla<0?diasDesdeAncla%len+len:diasDesdeAncla) + (cad.desplazamiento||0)) % len + len) % len;
+  }
+  const code = cad.secuencia[indice] || null;
+  return {aplica:true, code, indice, motivo:null};
+}
+// Contar días naturales entre fechaA y fechaB que NO son ausencia del trabajador
+function contarDiasNoAusentes(trabajador, fechaA, fechaB){
+  if(!fechaA || !fechaB) return 0;
+  const aus = (state.ausencias||[]).filter(a=>a.trabajadorId===trabajador.id);
+  let count = 0;
+  let d = parse(fechaA);
+  const fin = parse(fechaB);
+  while(d < fin){
+    const ds = fmt(d);
+    const enAus = aus.some(a=> ds>=a.inicio && ds<=a.fin);
+    if(!enAus) count++;
+    d = addDays(d, 1);
+  }
+  return count;
+}
+function buscarUltimaAusenciaAntes(trabajador, fechaStr){
+  const aus = (state.ausencias||[]).filter(a=>a.trabajadorId===trabajador.id && a.fin < fechaStr);
+  if(!aus.length) return null;
+  aus.sort((a,b)=>b.fin.localeCompare(a.fin));
+  return aus[0];
+}
+// Validar cadencia de un trabajador
+function validarCadencia(trabajador, cadencia){
+  const errores=[], advertencias=[];
+  const cad = cadencia || (trabajador&&trabajador.cadencia);
+  if(!cad) return {valida:false, errores:['Sin cadencia'], advertencias:[], resumen:{longitud:0,diasTrabajo:0,diasDescanso:0,horasCiclo:0,noches:0,maxConsecutivos:0}};
+  if(!cad.secuencia || !cad.secuencia.length) errores.push('Secuencia vacía');
+  if(cad.activa && !cad.fechaAncla) errores.push('Falta fecha de anclaje');
+  let diasTrabajo=0, diasDescanso=0, horasCiclo=0, noches=0, maxConsecutivos=0;
+  let consec=0;
+  (cad.secuencia||[]).forEach((code,i)=>{
+    const tn = turnoPorCode(code);
+    if(!tn){ errores.push(`Turno inexistente: ${code} (pos ${i+1})`); return; }
+    if(tn.trabajo){ diasTrabajo++; consec++; maxConsecutivos=Math.max(maxConsecutivos,consec); horasCiclo+=(tn.horas||0); }
+    else { diasDescanso++; consec=0; }
+    if(code==='N') noches++;
+    // Verificar permisos del trabajador
+    if(trabajador && tn.trabajo){
+      const p = trabajador.preferencias||{};
+      if(Array.isArray(p.turnosPermitidos) && !p.turnosPermitidos.includes(code)) errores.push(`Turno ${code} (pos ${i+1}) no permitido`);
+      if(code==='N' && p.noTrabajaNoches) errores.push(`Contiene N pero no trabaja noches`);
+      if(p.soloTurnos && p.soloTurnosTipo && code!==p.soloTurnosTipo && tn.trabajo) errores.push(`Solo puede hacer ${p.soloTurnosTipo}, pero cadencia tiene ${code}`);
+    }
+  });
+  // Validar cierre del ciclo (último→primero)
+  const seq = cad.secuencia||[];
+  if(seq.length>=2){
+    const cfg = state.config||{};
+    const ultimo=seq[seq.length-1], primero=seq[0];
+    if(ultimo==='N' && (primero==='M'||primero==='T') && !cfg.permitirIncompatibles) errores.push('Cierre de ciclo: N seguida de '+primero);
+    if(ultimo==='T' && primero==='M' && !cfg.permitirMananaTrasTarde) advertencias.push('Cierre de ciclo: T seguida de M');
+  }
+  // Max consecutivos vs config
+  const maxCfg = (trabajador&&trabajador.preferencias&&trabajador.preferencias.maxDiasConsecutivos) || (state.config&&state.config.maxDiasConsecutivos) || 6;
+  if(maxConsecutivos > maxCfg) errores.push(`${maxConsecutivos} días consecutivos (máx ${maxCfg})`);
+  return {valida:errores.length===0, errores, advertencias, resumen:{longitud:seq.length, diasTrabajo, diasDescanso, horasCiclo, noches, maxConsecutivos}};
+}
+// Proyectar cadencias en un mes
+function proyectarCadenciasEnMes(m, opciones){
+  if(!m||!m.inicio||!m.fin) return;
+  const dias = diasEntre(parse(m.inicio), parse(m.fin));
+  state.trabajadores.forEach(t=>{
+    if(!t.activo || !t.cadencia || !t.cadencia.activa) return;
+    const cad = t.cadencia;
+    if(!cad.secuencia.length || !cad.fechaAncla) return;
+    dias.forEach(d=>{
+      const ds = fmt(d);
+      const cur = getAsig(m, t.id, ds);
+      // Prioridad: ausencia > manual bloqueada > regla bloqueada — no sobrescribir
+      if(cur){
+        if(cur.origen===ORIGEN_AUSENCIA) return;
+        if(cur.origen===ORIGEN_MANUAL && cur.bloqueado) return;
+        if(cur.origen===ORIGEN_REGLA && cur.bloqueado) return;
+        // Si ya es cadencia del mismo trabajador, actualizar si cambió
+        if(cur.origen===ORIGEN_CADENCIA && cur.cadenciaId===t.id){
+          const tc = obtenerTurnoCadencia(t, ds);
+          if(tc.aplica && tc.code && tc.code!==cur.turno){
+            setAsig(m, t.id, ds, tc.code, {origen:ORIGEN_CADENCIA, bloqueado:cad.modo==='bloqueada', cadenciaId:t.id, cadenciaModo:cad.modo});
+          }
+          return;
+        }
+        // No sobrescribir manual no bloqueada ni auto sin decisión
+        if(cur.origen===ORIGEN_MANUAL) return;
+      }
+      // Verificar ausencia del trabajador en esta fecha
+      const ausHoy = (state.ausencias||[]).some(a=>a.trabajadorId===t.id && ds>=a.inicio && ds<=a.fin);
+      if(ausHoy) return;
+      const tc = obtenerTurnoCadencia(t, ds);
+      if(!tc.aplica || !tc.code) return;
+      setAsig(m, t.id, ds, tc.code, {origen:ORIGEN_CADENCIA, bloqueado:cad.modo==='bloqueada', cadenciaId:t.id, cadenciaModo:cad.modo});
+    });
+  });
+}
+function proyectarTodasCadencias(){
+  Object.keys(state.cuadrantes).forEach(y=>{
+    const a=state.cuadrantes[y];
+    for(let i=0;i<12;i++){ if(a.meses[i]&&a.meses[i].inicio) proyectarCadenciasEnMes(a.meses[i]); }
+  });
 }
 
 /* ============ TIPO DE DÍA (Fase 5) ============ */
@@ -1439,6 +1582,10 @@ function setCell(tid, fecha, code){
   if(prev && prev.bloqueado){
     if(!confirm('Esta celda está bloqueada. ¿Asignar de todos modos?')){ closeSvPop(); return; }
   }
+  // Si la celda es de cadencia, pedir confirmación de excepción
+  if(prev && prev.origen===ORIGEN_CADENCIA){
+    if(!confirm('Esta celda procede de una cadencia fija. ¿Quieres crear una excepción manual para esta fecha?')){ closeSvPop(); return; }
+  }
   if(code){
     // si es N, aplicar secuencia N→S→L
     if(code==='N' && state.config.secuenciaNocheObligatoria){
@@ -1804,9 +1951,10 @@ function generarAutomatico(seed, mejoraLocal){
   const dias = diasEntre(parse(m.inicio), parse(m.fin));
   const rng = mulberry32(seed);
 
-  // Fase 0: proyectar ausencias y descansos pendientes
+  // Fase 0: proyectar ausencias, descansos pendientes y cadencias
   proyectarAusenciasEnMes(m);
   aplicarDescansosPendientesEnMes(m);
+  proyectarCadenciasEnMes(m);
 
   // Limpiar asignaciones automáticas previas (no manuales, no ausencias, no regla)
   dias.forEach(d=>{
@@ -2225,6 +2373,7 @@ function delTrabajador(id){
 function editTrabajador(id){
   const t=state.trabajadores.find(x=>x.id===id); if(!t) return;
   const p=t.preferencias, j=t.jornada;
+  const cad = t.cadencia || {activa:false, modo:'bloqueada', secuencia:[], fechaAncla:null, desplazamiento:0, aplicaDesde:null, aplicaHasta:null, politicaAusencia:'calendario-fijo'};
   const optsRol=state.roles.map(r=>`<option value="${escaparAttr(r)}" ${t.rol===r?'selected':''}>${escaparHTML(r)}</option>`).join('');
   const turnosPermitidos=state.tiposTurno.map(tt=>`<label class="chk-pill ${p.turnosPermitidos.includes(tt.code)?'on':''}"><input type="checkbox" class="tp-chk" value="${tt.code}" ${p.turnosPermitidos.includes(tt.code)?'checked':''}> ${escaparHTML(tt.code)}</label>`).join(' ');
   const html=`<h3>✏️ Editar trabajador</h3>
@@ -2249,8 +2398,69 @@ function editTrabajador(id){
     <div class="row"><label class="sm">Descansos tras noche</label><input type="number" id="et-despnoche" value="${p.minDescansosTrasNoche||''}" min="0" placeholder="hereda global"></div>
     <div class="row"><label class="sm">Días no disponibles</label><input type="text" id="et-nodisp" value="${escaparAttr((p.diasNoDisponibles||[]).join(', '))}" placeholder="YYYY-MM-DD, ..."></div>
     <div class="row" style="align-items:flex-start;"><label class="sm">Observaciones</label><textarea id="et-obs">${escaparHTML(t.observaciones||'')}</textarea></div>
+    <div class="section-title" style="margin-top:14px;">🔁 Cadencia fija<span class="line"></span></div>
+    <div class="row"><label class="sm">Activar cadencia</label><label class="chk-pill ${cad.activa?'on':''}"><input type="checkbox" id="et-cad-activa" ${cad.activa?'checked':''}> Activa</label></div>
+    <div id="et-cad-panel" style="${cad.activa?'':'display:none;'}">
+      <div class="row"><label class="sm">Modo</label><select id="et-cad-modo">
+        <option value="bloqueada" ${cad.modo==='bloqueada'?'selected':''}>Bloqueada (no modificable por generador)</option>
+        <option value="preferente" ${cad.modo==='preferente'?'selected':''}>Preferente (generador puede desviarse)</option></select></div>
+      <div class="row"><label class="sm">Plantilla base</label><select id="et-cad-plt" onchange="aplicarPlantillaCadencia()">
+        <option value="">— Ninguna —</option>${state.plantillas.map(pl=>`<option value="${pl.id}">${escaparHTML(pl.nombre)} (${pl.secuencia.join('-')})</option>`).join('')}</select></div>
+      <div class="row" style="align-items:flex-start;"><label class="sm">Secuencia</label><input type="text" id="et-cad-seq" value="${escaparAttr((cad.secuencia||[]).join('-'))}" placeholder="M-M-T-T-N-S-L" style="text-transform:uppercase;font-weight:700;"></div>
+      <p class="hint" style="margin-top:-6px;margin-bottom:8px;">Separar turnos por guión. Ej: M-M-T-T-N-S-L</p>
+      <div class="row"><label class="sm">Fecha anclaje</label><input type="date" id="et-cad-ancla" value="${escaparAttr(cad.fechaAncla||'')}"></div>
+      <div class="row"><label class="sm">Desplazamiento</label><input type="number" id="et-cad-desp" value="${cad.desplazamiento||0}" min="0"></div>
+      <div class="row"><label class="sm">Aplicar desde</label><input type="date" id="et-cad-desde" value="${escaparAttr(cad.aplicaDesde||'')}"></div>
+      <div class="row"><label class="sm">Aplicar hasta</label><input type="date" id="et-cad-hasta" value="${escaparAttr(cad.aplicaHasta||'')}"></div>
+      <div class="row"><label class="sm">Política ausencia</label><select id="et-cad-polaus">
+        <option value="calendario-fijo" ${cad.politicaAusencia==='calendario-fijo'?'selected':''}>Calendario fijo</option>
+        <option value="pausar" ${cad.politicaAusencia==='pausar'?'selected':''}>Pausar durante ausencia</option>
+        <option value="reiniciar" ${cad.politicaAusencia==='reiniciar'?'selected':''}>Reiniciar tras ausencia</option></select></div>
+      <div class="row"><button class="btn sm" onclick="previsualizarCadencia('${id}')">👁 Previsualizar 28 días</button>
+        <button class="btn sm" onclick="validarCadenciaUI('${id}')">✓ Validar cadencia</button></div>
+      <div id="et-cad-preview" style="max-height:200px;overflow:auto;font-size:11px;margin-top:6px;"></div>
+    </div>
     <div class="actions"><button class="btn" onclick="closeModal();openTrabajadores()">Cancelar</button><button class="btn primary" onclick="saveTrabajador('${id}')">Guardar</button></div>`;
   openModal(html, true);
+  // Toggle cadencia panel visibility
+  document.getElementById('et-cad-activa').addEventListener('change', function(){ document.getElementById('et-cad-panel').style.display=this.checked?'':'none'; });
+}
+function aplicarPlantillaCadencia(){
+  const plId=document.getElementById('et-cad-plt').value; if(!plId) return;
+  const pl=state.plantillas.find(p=>p.id===plId); if(!pl) return;
+  document.getElementById('et-cad-seq').value=(pl.secuencia||[]).join('-');
+}
+function previsualizarCadencia(tid){
+  const t=state.trabajadores.find(x=>x.id===tid); if(!t) return;
+  const seq=(document.getElementById('et-cad-seq').value||'').split('-').map(s=>s.trim().toUpperCase()).filter(Boolean);
+  const ancla=document.getElementById('et-cad-ancla').value;
+  const desp=parseInt(document.getElementById('et-cad-desp').value)||0;
+  const polAus=document.getElementById('et-cad-polaus').value;
+  if(!seq.length||!ancla){ document.getElementById('et-cad-preview').innerHTML='<span class="hint">Indica secuencia y fecha ancla para previsualizar.</span>'; return; }
+  const cadTemp={activa:true, modo:'bloqueada', secuencia:seq, fechaAncla:ancla, desplazamiento:desp, aplicaDesde:null, aplicaHasta:null, politicaAusencia:polAus};
+  const tTemp=Object.assign({},t,{cadencia:cadTemp});
+  let html='<table class="tbl"><thead><tr><th>Fecha</th><th>Día</th><th>Turno</th><th>Pos</th></tr></thead><tbody>';
+  for(let i=0;i<28;i++){
+    const ds=sumarDiasFecha(ancla,i);
+    const tc=obtenerTurnoCadencia(tTemp, ds);
+    const dow=DIAS_LET[parse(ds).getDay()];
+    html+=`<tr><td>${ds}</td><td>${dow}</td><td><b>${tc.code||'—'}</b></td><td>${tc.indice!==null?tc.indice+1:'—'}</td></tr>`;
+  }
+  html+='</tbody></table>';
+  document.getElementById('et-cad-preview').innerHTML=html;
+}
+function validarCadenciaUI(tid){
+  const t=state.trabajadores.find(x=>x.id===tid); if(!t) return;
+  const seq=(document.getElementById('et-cad-seq').value||'').split('-').map(s=>s.trim().toUpperCase()).filter(Boolean);
+  const ancla=document.getElementById('et-cad-ancla').value;
+  const cadTemp={activa:true, modo:document.getElementById('et-cad-modo').value, secuencia:seq, fechaAncla:ancla, desplazamiento:parseInt(document.getElementById('et-cad-desp').value)||0, aplicaDesde:null, aplicaHasta:null, politicaAusencia:document.getElementById('et-cad-polaus').value};
+  const tTemp=Object.assign({},t,{cadencia:cadTemp});
+  const res=validarCadencia(tTemp, cadTemp);
+  let msg=res.valida?'✅ Cadencia válida.':'❌ Cadencia inválida.';
+  msg+=`\n\nResumen: ${res.resumen.longitud} pasos, ${res.resumen.diasTrabajo} trabajo, ${res.resumen.diasDescanso} descanso, ${res.resumen.horasCiclo}h/ciclo, ${res.resumen.noches} noches, máx ${res.resumen.maxConsecutivos} consec.`;
+  if(res.errores.length) msg+='\n\nErrores:\n• '+res.errores.join('\n• ');
+  if(res.advertencias.length) msg+='\n\nAdvertencias:\n• '+res.advertencias.join('\n• ');
+  alert(msg);
 }
 function saveTrabajador(id){
   const t=state.trabajadores.find(x=>x.id===id); if(!t) return;
@@ -2266,7 +2476,21 @@ function saveTrabajador(id){
   t.preferencias.maxDiasConsecutivos=num('et-maxc',null); t.preferencias.minDescansosTrasNoche=num('et-despnoche',null);
   t.preferencias.diasNoDisponibles=(val('et-nodisp')||'').split(',').map(s=>s.trim()).filter(Boolean);
   t.observaciones=val('et-obs');
-  save(state); closeModal(); openTrabajadores();
+  // Cadencia
+  if(!t.cadencia) t.cadencia = {};
+  t.cadencia.activa = document.getElementById('et-cad-activa').checked;
+  t.cadencia.modo = val('et-cad-modo') || 'bloqueada';
+  t.cadencia.secuencia = (val('et-cad-seq')||'').split('-').map(s=>s.trim().toUpperCase()).filter(Boolean);
+  t.cadencia.fechaAncla = val('et-cad-ancla') || null;
+  t.cadencia.desplazamiento = parseInt(val('et-cad-desp'))||0;
+  t.cadencia.aplicaDesde = val('et-cad-desde') || null;
+  t.cadencia.aplicaHasta = val('et-cad-hasta') || null;
+  t.cadencia.politicaAusencia = val('et-cad-polaus') || 'calendario-fijo';
+  save(state);
+  // Proyectar cadencias tras guardar
+  if(t.cadencia.activa) proyectarTodasCadencias();
+  save(state);
+  closeModal(); openTrabajadores();
 }
 
 /* Turnos */
@@ -2743,6 +2967,7 @@ state = load();
   // año activo existe
   if(!state.cuadrantes[state.centro.anyoActivo]){ state.cuadrantes[state.centro.anyoActivo]={meses:{}}; for(let i=0;i<12;i++) state.cuadrantes[state.centro.anyoActivo].meses[i]={inicio:null,fin:null,asignaciones:{},notasDia:{},idx:i}; save(state); }
   proyectarTodasAusencias();
+  proyectarTodasCadencias();
   actualizarSavedTag();
   const last=localStorage.getItem('cuadrantes_last_view');
   if(last){ try{ const {anyo,mesIdx}=JSON.parse(last); if(state.cuadrantes[anyo]&&state.cuadrantes[anyo].meses[mesIdx]&&state.cuadrantes[anyo].meses[mesIdx].inicio){ curAnyo=anyo; curMesIdx=mesIdx; showView('mes'); renderMes(); return; } }catch(e){} }
