@@ -312,7 +312,7 @@ html[data-theme="dark"] .tbl th{ background:#262b35;}
   <span class="saved-tag" id="savedTag"></span>
   <button class="btn sm ghost no-print" onclick="openCentro()">Centro</button>
   <button class="btn sm ghost no-print" onclick="openTrabajadores()">Cuidadoras</button>
-  <button class="btn sm ghost no-print" onclick="openTurnos()">Turnos</button>
+  <button class="btn sm ghost no-print" onclick="openCadenciaGlobal()">Cadencia</button>
   <button class="btn sm ghost no-print" onclick="openCoberturas()">Coberturas</button>
   <button class="btn sm ghost no-print" onclick="openAusencias()">Ausencias</button>
   <button class="btn sm ghost no-print" onclick="openPlantillas()">Plantillas</button>
@@ -377,7 +377,7 @@ const STORE_KEY = 'cuadrantes_residencia_v3';
 const BACKUP_KEYS = ['cuadrantes_residencia_backup_1','cuadrantes_residencia_backup_2','cuadrantes_residencia_backup_3','cuadrantes_residencia_backup_4','cuadrantes_residencia_backup_5'];
 const MESES_NOM = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DIAS_LET = ['D','L','M','X','J','V','S'];
-const BASICOS = ['M','T','N','S','L','VAC','BAJ','PER'];
+const BASICOS = ['M','T','N','L','VAC','BAJ','PER'];
 const ORIGEN_MANUAL='manual', ORIGEN_AUTO='automatico', ORIGEN_REGLA='regla', ORIGEN_AUSENCIA='ausencia', ORIGEN_CADENCIA='cadencia';
 
 /* ============ HELPERS DE SEGURIDAD (Fase 0.1) ============ */
@@ -402,13 +402,10 @@ function defaultTurnos(){
     {code:'M',  nombre:'Mañana',    color:'#fef9c3', horas:7,  trabajo:true,  ausencia:false, bloqueaAuto:false, manual:true,  orden:1,  protected:true,  cubreCobertura:true, equivaleACobertura:[]},
     {code:'T',  nombre:'Tarde',     color:'#dbeafe', horas:7,  trabajo:true,  ausencia:false, bloqueaAuto:false, manual:true,  orden:2,  protected:true,  cubreCobertura:true, equivaleACobertura:[]},
     {code:'N',  nombre:'Noche',     color:'#e0e7ff', horas:10, trabajo:true,  ausencia:false, bloqueaAuto:false, manual:true,  orden:3,  protected:true,  cubreCobertura:true, equivaleACobertura:[]},
-    {code:'S',  nombre:'Saliente',  color:'#f3e8ff', horas:0,  trabajo:false, ausencia:false, bloqueaAuto:false, manual:true,  orden:4,  protected:true,  cubreCobertura:false,equivaleACobertura:[]},
-    {code:'L',  nombre:'Libre',     color:'#bbf7d0', horas:0,  trabajo:false, ausencia:false, bloqueaAuto:false, manual:true,  orden:5,  protected:true,  cubreCobertura:false,equivaleACobertura:[]},
-    {code:'VAC',nombre:'Vacaciones',color:'#c7d2fe', horas:0,  trabajo:false, ausencia:true,  bloqueaAuto:true,  manual:true,  orden:6,  protected:true,  cubreCobertura:false,equivaleACobertura:[]},
-    {code:'BAJ',nombre:'Baja',      color:'#e5e7eb', horas:0,  trabajo:false, ausencia:true,  bloqueaAuto:true,  manual:true,  orden:7,  protected:true,  cubreCobertura:false,equivaleACobertura:[]},
-    {code:'PER',nombre:'Permiso',   color:'#fbcfe8', horas:0,  trabajo:false, ausencia:true,  bloqueaAuto:true,  manual:true,  orden:8,  protected:true,  cubreCobertura:false,equivaleACobertura:[]},
-    {code:'FOR',nombre:'Formación', color:'#fed7aa', horas:8,  trabajo:true,  ausencia:false, bloqueaAuto:false, manual:true,  orden:9,  protected:false, cubreCobertura:false,equivaleACobertura:[]},
-    {code:'REF',nombre:'Refuerzo',  color:'#fee2e2', horas:7,  trabajo:true,  ausencia:false, bloqueaAuto:false, manual:true,  orden:10, protected:false, cubreCobertura:true, equivaleACobertura:['M','T']},
+    {code:'L',  nombre:'Libre',     color:'#bbf7d0', horas:0,  trabajo:false, ausencia:false, bloqueaAuto:false, manual:true,  orden:4,  protected:true,  cubreCobertura:false,equivaleACobertura:[]},
+    {code:'VAC',nombre:'Vacaciones',color:'#c7d2fe', horas:0,  trabajo:false, ausencia:true,  bloqueaAuto:true,  manual:true,  orden:5,  protected:true,  cubreCobertura:false,equivaleACobertura:[]},
+    {code:'BAJ',nombre:'Baja',      color:'#e5e7eb', horas:0,  trabajo:false, ausencia:true,  bloqueaAuto:true,  manual:true,  orden:6,  protected:true,  cubreCobertura:false,equivaleACobertura:[]},
+    {code:'PER',nombre:'Permiso',   color:'#fbcfe8', horas:0,  trabajo:false, ausencia:true,  bloqueaAuto:true,  manual:true,  orden:7,  protected:true,  cubreCobertura:false,equivaleACobertura:[]},
   ];
 }
 function defaultConfig(){
@@ -416,18 +413,15 @@ function defaultConfig(){
     maxDiasConsecutivos:6,
     minDescansosTrasNoche:1,
     secuenciaNocheObligatoria:false,
-    sConsumeDescanso:false,
-    modoSaliente:'obligatorio', // 'obligatorio' | 'sinSaliente' | 'opcionalPlantilla'
-    maxNochesConsecutivas:2,
-    maxTurnosMismoTipo:6,
+    maxNochesConsecutivas:3,
     permitirMananaTrasTarde:true,
     permitirIncompatibles:false,
-    avisoExcesoHorasMensual:true,
-    umbralExcesoHorasMensual:180,
     toleranciaSaldoMensual:8,
     toleranciaSaldoAnual:40,
     reglaFinde:'sabado-domingo',
-    pesos:{ horasTotales:10, noches:8, tardes:7, mananas:7, finesSemana:8, domingos:6, festivos:7, evitarRepetirTurno:5, respetarPreferencias:9 }
+    // Cadencia global: se aplica a todas las cuidadoras con desfase
+    cadenciaGlobal: { activa:false, secuencia:[], fechaAncla:null },
+    pesos:{ horasTotales:10, noches:8, tardes:7, mananas:7, finesSemana:8, domingos:6, festivos:7 }
   };
 }
 function defaultRoles(){ return ['Cuidadora']; }
@@ -554,6 +548,7 @@ function migrate(s){
   if(!s.tiposTurno) s.tiposTurno = defaultTurnos();
   if(!s.config) s.config = defaultConfig();
   if(!s.config.modoSaliente) s.config.modoSaliente = 'obligatorio';
+  if(!s.config.cadenciaGlobal) s.config.cadenciaGlobal = {activa:false, secuencia:[], fechaAncla:null};
   if(!s.config.reglaFinde) s.config.reglaFinde = 'sabado-domingo';
   if(!s.config.pesos) s.config.pesos = defaultConfig().pesos;
   if(!s.festivos) s.festivos = [];
@@ -750,6 +745,8 @@ function setAsig(m, tid, fecha, code, meta){
     origen: (meta && meta.origen) || prev?.origen || ORIGEN_MANUAL,
     bloqueado: (meta && meta.bloqueado!==undefined) ? meta.bloqueado : (prev?.bloqueado || false),
     nota: (meta && meta.nota!==undefined) ? meta.nota : (prev?.nota || ''),
+    cadenciaId: (meta && meta.cadenciaId) || (prev?.cadenciaId) || null,
+    cadenciaModo: (meta && meta.cadenciaModo) || (prev?.cadenciaModo) || null,
     actualizadoEn: nowISO(),
     actualizadoPor: 'local'
   };
@@ -1150,6 +1147,8 @@ function validarRangoPeriodo(anyo, idx, inicio, fin){
 function enterMes(idx){
   const m = getMes(curAnyo, idx);
   if(!m.inicio || !m.fin){ defineRangoMes(idx); return; }
+  // Aplicar cadencia global si está activa
+  aplicarCadenciaGlobalEnMes(m);
   curMesIdx = idx; showView('mes'); renderMes();
   localStorage.setItem('cuadrantes_last_view', JSON.stringify({anyo:curAnyo, mesIdx:idx}));
 }
@@ -1229,10 +1228,10 @@ function renderMes(){
       if(code && tMap[code]){
         const tn=tMap[code]; const txt=textColorSobre(tn.color);
         td.style.background = tn.color;
-        const lock = (asig && asig.bloqueado) ? '<span class="lock">🔒</span>' : '';
+        
         const noteDot = (asig && asig.nota) ? `<span class="note-dot" title="${escaparAttr(asig.nota)}">•</span>` : '';
         const tagCls = asig && asig.origen===ORIGEN_AUTO ? 'opacity:.9;' : '';
-        td.innerHTML = `<button onclick="openSvPop(event,'${t.id}','${ds}')" style="color:${txt};${tagCls}">${escaparHTML(displayCorto(code))}</button>${lock}${noteDot}`;
+        td.innerHTML = `<button onclick="openSvPop(event,'${t.id}','${ds}')" style="color:${txt};${tagCls}">${escaparHTML(displayCorto(code))}</button>${noteDot}`;
       } else {
         td.innerHTML = `<button onclick="openSvPop(event,'${t.id}','${ds}')" style="opacity:.25;">·</button>`;
       }
@@ -1305,9 +1304,9 @@ function renderCelda(tid, fecha){
   if(code && tMap[code]){
     const tn=tMap[code]; const txt=textColorSobre(tn.color);
     td.style.background = tn.color;
-    const lock = (asig && asig.bloqueado) ? '<span class="lock">🔒</span>' : '';
+    
     const noteDot = (asig && asig.nota) ? `<span class="note-dot" title="${escaparAttr(asig.nota)}">•</span>` : '';
-    td.innerHTML = `<button onclick="openSvPop(event,'${tid}','${fecha}')" style="color:${txt};">${escaparHTML(displayCorto(code))}</button>${lock}${noteDot}`;
+    td.innerHTML = `<button onclick="openSvPop(event,'${tid}','${fecha}')" style="color:${txt};">${escaparHTML(displayCorto(code))}</button>${noteDot}`;
   } else {
     td.innerHTML = `<button onclick="openSvPop(event,'${tid}','${fecha}')" style="opacity:.25;">·</button>`;
   }
@@ -2645,6 +2644,102 @@ function cargarFestivosEspana(anyo){
   if(!confirm(`¿Añadir festivos nacionales de España ${anyo}?`)) return;
   festivosEspanaAnyo(anyo).forEach(n=>{ if(!state.festivos.some(f=>f.fecha===n.fecha)) state.festivos.push(n); });
   state.festivos.sort((a,b)=>a.fecha.localeCompare(b.fecha)); save(state); openFestivos();
+}
+
+/* Cadencia global — se aplica a todas las cuidadoras con desfase */
+function openCadenciaGlobal(){
+  const cg = state.config.cadenciaGlobal || {activa:false, secuencia:[], fechaAncla:null};
+  const seqStr = (cg.secuencia||[]).join(' - ');
+  const html=`<h3>🔁 Cadencia global</h3>
+    <p class="hint">Define una secuencia de turnos que se repite para <b>todas</b> las cuidadoras. Cada cuidadora empieza en un punto diferente del ciclo (desfase automático por su posición en la lista).</p>
+    <div class="row"><label class="sm">Activar cadencia</label><label class="chk-pill ${cg.activa?'on':''}"><input type="checkbox" id="cg-activa" ${cg.activa?'checked':''}> Activa</label></div>
+    <div class="row"><label class="sm">Secuencia</label><input type="text" id="cg-seq" value="${escaparAttr((cg.secuencia||[]).join('-'))}" placeholder="M-M-T-T-N-L-L" style="text-transform:uppercase;font-weight:700;font-size:16px;letter-spacing:1px;"></div>
+    <p class="hint" style="margin-top:-6px;">Usa solo: <b>M</b> (mañana), <b>T</b> (tarde), <b>N</b> (noche), <b>L</b> (libre). Separa con guión.</p>
+    <div class="row"><label class="sm">Fecha de inicio</label><input type="date" id="cg-ancla" value="${escaparAttr(cg.fechaAncla||'')}"></div>
+    <p class="hint" style="margin-top:-6px;">La primera cuidadora empieza el ciclo en esta fecha. Las demás se desplazan automáticamente.</p>
+    <div class="row"><button class="btn sm" onclick="previsualizarCadenciaGlobal()">👁 Previsualizar</button></div>
+    <div id="cg-preview" style="max-height:300px;overflow:auto;margin-top:8px;"></div>
+    <div class="actions"><button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="guardarCadenciaGlobal()">Guardar y aplicar</button></div>`;
+  openModal(html, true);
+}
+function previsualizarCadenciaGlobal(){
+  const seq = (document.getElementById('cg-seq').value||'').split('-').map(s=>s.trim().toUpperCase()).filter(Boolean);
+  const ancla = document.getElementById('cg-ancla').value;
+  if(!seq.length||!ancla){ document.getElementById('cg-preview').innerHTML='<span class="hint">Indica secuencia y fecha de inicio.</span>'; return; }
+  const len = seq.length;
+  const activas = state.trabajadores.filter(t=>t.activo);
+  let html = '<table class="tbl"><thead><tr><th>Cuidadora</th>';
+  for(let d=0;d<14;d++){
+    const ds=sumarDiasFecha(ancla,d);
+    html+=`<th>${ds.slice(8)}${DIAS_LET[parse(ds).getDay()]}</th>`;
+  }
+  html+='</tr></thead><tbody>';
+  activas.forEach((t,i)=>{
+    html+=`<tr><td style="text-align:left;font-weight:600;">${escaparHTML(t.nombreCompleto||t.nombre)}</td>`;
+    for(let d=0;d<14;d++){
+      const idx = (d + i) % len; // desfase por posición
+      const code = seq[idx]||'?';
+      const tn = turnoPorCode(code);
+      const bg = tn?tn.color:'#eee';
+      html+=`<td style="background:${bg};font-weight:700;">${code}</td>`;
+    }
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById('cg-preview').innerHTML=html;
+}
+function guardarCadenciaGlobal(){
+  const activa = document.getElementById('cg-activa').checked;
+  const seq = (document.getElementById('cg-seq').value||'').split('-').map(s=>s.trim().toUpperCase()).filter(Boolean);
+  const ancla = document.getElementById('cg-ancla').value;
+  if(activa && !seq.length){ alert('Indica una secuencia (ej: M-M-T-T-N-L-L).'); return; }
+  if(activa && !ancla){ alert('Indica la fecha de inicio.'); return; }
+  // Validar códigos
+  for(const code of seq){
+    if(!['M','T','N','L'].includes(code)){ alert('Código no válido: '+code+'. Usa solo M, T, N, L.'); return; }
+  }
+  if(!state.config.cadenciaGlobal) state.config.cadenciaGlobal = {};
+  state.config.cadenciaGlobal.activa = activa;
+  state.config.cadenciaGlobal.secuencia = seq;
+  state.config.cadenciaGlobal.fechaAncla = ancla || null;
+  save(state);
+  // Aplicar a todos los meses definidos
+  if(activa) aplicarCadenciaGlobalATodo();
+  save(state);
+  closeModal();
+  if(curMesIdx!==null) renderMes();
+  alert(activa ? `Cadencia aplicada: ${seq.join('-')} (${seq.length} días de ciclo) a ${state.trabajadores.filter(t=>t.activo).length} cuidadoras.` : 'Cadencia global desactivada.');
+}
+function aplicarCadenciaGlobalATodo(){
+  const cg = state.config.cadenciaGlobal;
+  if(!cg||!cg.activa||!cg.secuencia.length||!cg.fechaAncla) return;
+  Object.keys(state.cuadrantes).forEach(y=>{
+    const a=state.cuadrantes[y];
+    for(let i=0;i<12;i++){ if(a.meses[i]&&a.meses[i].inicio&&a.meses[i].fin) aplicarCadenciaGlobalEnMes(a.meses[i]); }
+  });
+}
+function aplicarCadenciaGlobalEnMes(m){
+  if(!m||!m.inicio||!m.fin) return;
+  const cg = state.config.cadenciaGlobal;
+  if(!cg||!cg.activa||!cg.secuencia.length||!cg.fechaAncla) return;
+  const len = cg.secuencia.length;
+  const activas = state.trabajadores.filter(t=>t.activo);
+  const dias = diasEntre(parse(m.inicio), parse(m.fin));
+  activas.forEach((t,posicion)=>{
+    dias.forEach(d=>{
+      const ds = fmt(d);
+      const cur = getAsig(m, t.id, ds);
+      // No sobrescribir ausencias ni asignaciones manuales
+      if(cur && (cur.origen===ORIGEN_AUSENCIA || cur.origen===ORIGEN_MANUAL)) return;
+      // Calcular posición en el ciclo: días desde ancla + desfase por posición
+      const diasDesdeAncla = diasCalendarioEntre(cg.fechaAncla, ds) - 1;
+      const idx = (((diasDesdeAncla + posicion) % len) + len) % len;
+      const code = cg.secuencia[idx];
+      if(!code) return;
+      setAsig(m, t.id, ds, code, {origen:ORIGEN_CADENCIA, bloqueado:false, cadenciaId:'global', cadenciaModo:'global'});
+    });
+  });
 }
 
 /* Plantillas de rotación */
