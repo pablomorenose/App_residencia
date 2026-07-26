@@ -1,0 +1,2432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuadrantes Residencia</title>
+<style>
+/* ===================== RESET + BASE ===================== */
+* { margin:0; padding:0; box-sizing:border-box; }
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --ink:#1f2430; --muted:#6b7280;
+  --line:#e2e5ea; --accent:#2563eb; --accent-d:#1d4ed8;
+  --red:#dc2626; --red-bg:#fee2e2; --amber:#f59e0b; --amber-bg:#fef3c7;
+  --ok:#16a34a; --ok-bg:#dcfce7; --info:#2563eb; --info-bg:#dbeafe;
+  --shadow:0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+}
+html[data-theme="dark"]{
+  --bg:#15181f; --card:#1e222b; --ink:#e6e8ee; --muted:#9aa0ab;
+  --line:#2c313c; --accent:#3b82f6; --accent-d:#2563eb;
+  --red-bg:#3a1e1e; --amber-bg:#3a2e12; --ok-bg:#13301c; --info-bg:#1c2540;
+  --shadow:0 1px 3px rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.2);
+}
+html,body{ height:100%; }
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg); color:var(--ink); font-size:14px; line-height:1.4;
+}
+button{ font-family:inherit; cursor:pointer; border:none; }
+input,select,textarea{ font-family:inherit; font-size:14px; }
+
+/* ===================== HEADER ===================== */
+header{
+  position:sticky; top:0; z-index:50; background:var(--card);
+  border-bottom:1px solid var(--line); box-shadow:var(--shadow);
+  display:flex; align-items:center; gap:8px; padding:7px 14px; flex-wrap:wrap;
+}
+header h1{ font-size:15px; font-weight:700; letter-spacing:-.2px; margin-right:auto; }
+header h1 .sub{ font-weight:400; color:var(--muted); font-size:13px; margin-left:8px;}
+header .saved-tag{ font-size:10px; color:var(--muted); }
+.btn{
+  background:#fff; border:1px solid var(--line); color:var(--ink);
+  padding:7px 12px; border-radius:8px; font-size:13px; font-weight:500;
+  display:inline-flex; align-items:center; gap:6px; transition:.12s;
+}
+html[data-theme="dark"] .btn{ background:var(--card); }
+.btn:hover{ background:#f8f9fb; border-color:#cbd1da; }
+html[data-theme="dark"] .btn:hover{ background:#262b35; }
+.btn:active{ transform:translateY(1px); }
+.btn.primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
+.btn.primary:hover{ background:var(--accent-d); }
+.btn.ghost{ background:transparent; border-color:transparent; color:var(--muted); }
+.btn.ghost:hover{ background:#eef1f5; color:var(--ink); }
+html[data-theme="dark"] .btn.ghost:hover{ background:#262b35; }
+.btn.danger{ color:var(--red); border-color:#fecaca; }
+.btn.danger:hover{ background:#fef2f2; }
+.btn.sm{ padding:4px 9px; font-size:12px; }
+
+/* ===================== MAIN / VISTAS ===================== */
+main{ padding:12px 16px 40px; max-width:1500px; margin:0 auto; }
+.view{ display:none; } .view.active{ display:block; }
+.crumbs{ display:flex; align-items:center; gap:8px; color:var(--muted); font-size:12px; margin-bottom:6px;}
+.crumbs a{ color:var(--accent); cursor:pointer; text-decoration:none; }
+.crumbs a:hover{ text-decoration:underline; }
+.crumbs .sep{ opacity:.5; }
+.hint{ color:var(--muted); font-size:13px; }
+
+.legal-notice{
+  background:var(--amber-bg); border:1px solid #fde68a; color:#92400e;
+  border-radius:8px; padding:6px 12px; font-size:12px; margin:8px 0;
+  display:flex; gap:8px; align-items:center;
+}
+html[data-theme="dark"] .legal-notice{ color:#fcd34d; border-color:#5a4410;}
+.legal-notice .x{ cursor:pointer; font-weight:700; }
+.viability-warn{
+  background:var(--red-bg); border:1px solid #fecaca; color:#b91c1c;
+  border-radius:8px; padding:8px 12px; font-size:12px; margin:8px 0;
+}
+html[data-theme="dark"] .viability-warn{ color:#fca5a5; }
+
+/* ===================== VISTA AÑOS ===================== */
+.grid-years{ display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:14px; }
+.year-card{
+  background:var(--card); border:1px solid var(--line); border-radius:12px;
+  padding:22px 16px; box-shadow:var(--shadow); cursor:pointer; text-align:center;
+  transition:.15s; position:relative;
+}
+.year-card:hover{ border-color:var(--accent); transform:translateY(-2px); }
+.year-card .y{ font-size:30px; font-weight:700; letter-spacing:-1px; }
+.year-card .meta{ font-size:12px; color:var(--muted); margin-top:4px;}
+.year-card .del{ position:absolute; top:8px; right:8px; opacity:0; transition:.12s;}
+.year-card:hover .del{ opacity:1; }
+.empty-state{ text-align:center; padding:60px 20px; color:var(--muted); }
+.empty-state .big{ font-size:46px; margin-bottom:10px; }
+
+/* ===================== VISTA AÑO ===================== */
+.grid-months{ display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:12px; }
+.month-card{
+  background:var(--card); border:1px solid var(--line); border-radius:10px;
+  padding:16px 14px; box-shadow:var(--shadow); cursor:pointer; transition:.15s;
+}
+.month-card:hover{ border-color:var(--accent); transform:translateY(-2px); }
+.month-card .m-name{ font-size:15px; font-weight:600; }
+.month-card .m-range{ font-size:11px; color:var(--muted); margin-top:6px; }
+.month-card .m-badge{ display:inline-block; margin-top:8px; font-size:10px; font-weight:600;
+  padding:2px 7px; border-radius:20px; background:#eef1f5; color:var(--muted);}
+.month-card.filled .m-badge{ background:var(--ok-bg); color:#15803d; }
+
+/* ===================== EDITOR MES ===================== */
+.mes-layout{ display:grid; grid-template-columns:1fr 320px; gap:14px; align-items:flex-start; }
+.mes-layout.closed{ grid-template-columns:1fr; }
+.mes-main{ min-width:0; }
+.month-bar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;}
+.month-bar h2{ font-size:16px; font-weight:700; }
+.range-pill{ font-size:12px; color:var(--muted); background:#eef1f5; padding:4px 10px; border-radius:20px;}
+.table-wrap{ overflow:auto; background:var(--card); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); max-height:68vh;}
+table.cuad{ border-collapse:separate; border-spacing:0; width:100%; min-width:900px;}
+table.cuad th, table.cuad td{ border-right:1px solid var(--line); border-bottom:1px solid var(--line); }
+table.cuad tr:first-child th:first-child{ border-top-left-radius:10px;}
+table.cuad thead th{
+  position:sticky; top:0; background:#f8f9fb; z-index:2; padding:3px 0; text-align:center;
+  font-weight:600; min-width:36px; max-width:40px; overflow:hidden;
+}
+html[data-theme="dark"] table.cuad thead th{ background:#262b35; }
+table.cuad thead th .dnum{ font-size:13px; font-weight:700; display:block; }
+table.cuad thead th .dlet{ font-size:10px; color:var(--muted); }
+table.cuad thead th .fest-name{ font-size:8px; color:var(--red); font-weight:600; line-height:1; margin-top:1px; max-width:40px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+table.cuad thead th.sun{ background:var(--red-bg); }
+table.cuad thead th.sun .dnum, table.cuad thead th.sun .dlet{ color:var(--red); }
+table.cuad thead th.fest{ background:var(--red-bg);}
+table.cuad thead th.fest .dnum, table.cuad thead th.fest .dlet{ color:var(--red); }
+table.cuad thead th .th-btn{ background:transparent; border:none; padding:3px 0; display:flex; flex-direction:column; align-items:center; width:100%; cursor:pointer; border-radius:4px; transition:background .12s;}
+table.cuad thead th .th-btn:hover{ background:rgba(37,99,235,.12); }
+table.cuad thead th .cov-dot{ width:7px; height:7px; border-radius:50%; margin-top:1px; display:inline-block; }
+table.cuad thead th .cov-dot.ok{ background:var(--ok); }
+table.cuad thead th .cov-dot.bad{ background:var(--red); }
+table.cuad thead th .cov-dot.warn{ background:var(--amber); }
+
+table.cuad th.namecol{
+  position:sticky; left:0; z-index:3; min-width:140px; text-align:left; padding:3px 8px;
+  font-size:11px; font-weight:600; background:#f1f3f6;
+}
+html[data-theme="dark"] table.cuad th.namecol{ background:#262b35; }
+table.cuad thead th.namecol{ z-index:4; border-top-left-radius:10px; }
+table.cuad td.namecol{ position:sticky; left:0; z-index:1; background:var(--card); padding:4px 9px; font-weight:600; font-size:12px;}
+html[data-theme="dark"] table.cuad td.namecol{ background:var(--card); }
+table.cuad td.namecol .rol{ font-size:8px; color:var(--accent); font-weight:700; line-height:1; margin-bottom:1px; display:block;}
+table.cuad td.namecol .nm{ font-size:12px; font-weight:600; line-height:1.2; display:block;}
+table.cuad td.namecol .row-tools{ display:flex; gap:2px; margin-top:2px;}
+table.cuad td.namecol .row-tools button{ font-size:9px; padding:1px 4px; border-radius:4px; background:transparent; color:var(--muted); border:1px solid var(--line);}
+table.cuad td.namecol .row-tools button:hover{ background:#eef1f5; color:var(--ink);}
+table.cuad td.cell{ text-align:center; vertical-align:middle; padding:0; height:32px; position:relative;}
+table.cuad td.cell.sun{ background:var(--red-bg);}
+table.cuad td.cell.fest{ background:var(--red-bg);}
+table.cuad td.cell.fuera-mes{ opacity:.38; }
+table.cuad td.cell.selected{ outline:2px solid var(--accent); outline-offset:-2px; }
+table.cuad td.cell.flash{ animation:flash 1s ease; }
+@keyframes flash{ 0%{box-shadow:0 0 0 3px var(--amber) inset;} 100%{box-shadow:none;} }
+table.cuad td.cell button{ width:100%; height:100%; border:none; background:transparent; font-size:12px; font-weight:700; color:var(--ink); cursor:pointer; position:relative;}
+table.cuad td.cell .lock{ position:absolute; top:1px; right:2px; font-size:8px; color:var(--ink); opacity:.7; pointer-events:none;}
+table.cuad td.cell .note-dot{ position:absolute; bottom:1px; right:2px; font-size:9px; color:var(--ink); opacity:.8; pointer-events:none;}
+table.cuad td.cell .tag{ display:inline-block; min-width:22px; padding:3px 4px; border-radius:5px; font-size:11px; font-weight:700;}
+
+/* Panel de alertas lateral */
+.alerts-panel{
+  background:var(--card); border:1px solid var(--line); border-radius:10px;
+  box-shadow:var(--shadow); position:sticky; top:64px; max-height:78vh; overflow:auto;
+}
+.alerts-panel .ap-head{ display:flex; align-items:center; gap:6px; padding:8px 10px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--card); z-index:1;}
+.alerts-panel .ap-head h4{ font-size:13px; font-weight:700; }
+.alerts-panel .ap-head .badge{ font-size:10px; font-weight:700; padding:1px 7px; border-radius:20px; }
+.alerts-panel .ap-head .badge.err{ background:var(--red-bg); color:var(--red);}
+.alerts-panel .ap-head .badge.warn{ background:var(--amber-bg); color:#b45309;}
+.alerts-panel .ap-head .close{ margin-left:auto; cursor:pointer; color:var(--muted);}
+.alerts-panel .ap-empty{ padding:16px; text-align:center; color:var(--muted); font-size:12px;}
+.alerts-panel .ap-item{ padding:7px 10px; border-bottom:1px solid var(--line); cursor:pointer; font-size:12px;}
+.alerts-panel .ap-item:hover{ background:#eef1f5;}
+html[data-theme="dark"] .alerts-panel .ap-item:hover{ background:#262b35;}
+.alerts-panel .ap-item .ai-msg{ display:block;}
+.alerts-panel .ap-item .ai-meta{ font-size:10px; color:var(--muted); margin-top:2px; display:block;}
+.alerts-panel .ap-item.err{ border-left:3px solid var(--red);}
+.alerts-panel .ap-item.warn{ border-left:3px solid var(--amber);}
+
+/* Sección títulos */
+.section-title{ font-size:14px; font-weight:700; margin:24px 0 10px; display:flex; align-items:center; gap:8px;}
+.section-title .line{ flex:1; height:1px; background:var(--line);}
+
+/* Tarjetas contadores */
+.counters{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:10px;}
+.c-card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; box-shadow:var(--shadow);}
+.c-card .c-name{ font-weight:600; font-size:13px; margin-bottom:4px; }
+.c-card .c-rol{ font-size:10px; color:var(--accent); font-weight:700; margin-bottom:8px;}
+.c-stats{ display:flex; gap:6px; flex-wrap:wrap;}
+.stat{ background:#f1f3f6; border-radius:8px; padding:5px 8px; text-align:center; min-width:46px;}
+html[data-theme="dark"] .stat{ background:#262b35; }
+.stat .v{ font-size:15px; font-weight:700; display:block;}
+.stat .l{ font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px;}
+.stat.tg{ background:#ffedd5;} .stat.tg .v{ color:#c2410c;}
+.stat.g{ background:#fee2e2;} .stat.g .v{ color:#b91c1c;}
+.stat.f{ background:var(--info-bg);} .stat.f .v{ color:#4338ca;}
+.stat.w{ background:#dcfce7;} .stat.w .v{ color:#15803d;}
+.stat.n{ background:#ede9fe;} .stat.n .v{ color:#6d28d9;}
+.stat.h.bad{ background:#fee2e2;} .stat.h.bad .v{ color:#b91c1c;}
+.stat.h.ok{ background:#dcfce7;} .stat.h.ok .v{ color:#15803d;}
+
+/* Cobertura */
+.cov-alerts{ background:#fff5f5; border:1px solid #fecaca; border-radius:8px; padding:8px 12px; font-size:12px; color:#b91c1c;}
+html[data-theme="dark"] .cov-alerts{ background:#2a1414; color:#fca5a5;}
+.cov-alerts li{ margin:2px 0; list-style:none;}
+.cov-ok-box{ background:var(--ok-bg); border:1px solid #86efac; border-radius:8px; padding:8px 12px; font-size:12px; color:#15803d;}
+
+/* popover turnos en celda */
+.sv-pop{
+  position:absolute; z-index:200; background:var(--card); border:1px solid var(--line); border-radius:10px;
+  box-shadow:0 8px 24px rgba(0,0,0,.18); padding:6px; display:none; min-width:170px;
+  max-height:340px; overflow:auto;
+}
+.sv-pop.show{ display:block;}
+.sv-opt{ display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; cursor:pointer; font-size:13px;}
+.sv-opt:hover{ background:#eef1f5;}
+html[data-theme="dark"] .sv-opt:hover{ background:#262b35;}
+.sv-opt .dot{ width:14px; height:14px; border-radius:4px; border:1px solid rgba(0,0,0,.1);}
+.sv-opt.clear{ color:var(--red); border-bottom:1px solid var(--line); margin-bottom:4px; border-radius:6px 6px 0 0;}
+.sv-opt b{ min-width:26px;}
+.sv-pop .pop-head{ font-size:11px; color:var(--muted); padding:2px 6px 6px; border-bottom:1px solid var(--line); margin-bottom:4px;}
+.sv-pop .pop-act{ padding:6px 8px; border-top:1px solid var(--line); margin-top:4px; display:flex; gap:6px; flex-wrap:wrap;}
+.sv-pop .pop-act button{ font-size:11px; padding:3px 7px; border-radius:5px; background:#f1f3f6; border:1px solid var(--line);}
+
+.legend{ display:flex; gap:12px; flex-wrap:wrap; margin:10px 0; }
+.legend .lg{ display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--muted);}
+.legend .lg .dot{ width:12px; height:12px; border-radius:3px; border:1px solid rgba(0,0,0,.1);}
+
+/* ===================== MODAL ===================== */
+.overlay{
+  position:fixed; inset:0; background:rgba(15,23,42,.45); z-index:100;
+  display:none; align-items:flex-start; justify-content:center; padding:40px 16px; overflow:auto;
+}
+.overlay.show{ display:flex; }
+.modal{ background:var(--card); border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.3);
+  width:100%; max-width:580px; padding:22px; color:var(--ink); }
+.modal.wide{ max-width:820px;}
+.modal.xwide{ max-width:1050px;}
+.modal h3{ font-size:18px; font-weight:700; margin-bottom:6px;}
+.modal .closex{ float:right; }
+.modal .row{ display:flex; gap:10px; align-items:center; margin-bottom:10px; flex-wrap:wrap;}
+.modal label{ font-size:13px; font-weight:600; min-width:100px;}
+.modal label.sm{ font-size:11px; font-weight:500; min-width:auto;}
+.modal input[type=text],.modal input[type=number],.modal input[type=date],.modal input[type=color],.modal select,.modal textarea{
+  border:1px solid var(--line); border-radius:8px; padding:7px 10px; flex:1; min-width:120px; background:var(--card); color:var(--ink);
+}
+.modal textarea{ min-height:50px; resize:vertical;}
+.modal .actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:16px; border-top:1px solid var(--line); padding-top:14px; flex-wrap:wrap;}
+
+.list-edit{ display:flex; flex-direction:column; gap:8px; margin-bottom:12px;}
+.list-item{ display:flex; align-items:center; gap:6px; background:#f8f9fb; border:1px solid var(--line); border-radius:8px; padding:7px 10px; flex-wrap:nowrap; overflow:hidden;}
+html[data-theme="dark"] .list-item{ background:#1a1e26;}
+.list-item.col{ flex-direction:column; align-items:stretch; gap:8px;}
+.list-item input[type="text"]{ flex:1; min-width:0; }
+.drag-handle{ cursor:grab; color:var(--muted); font-size:18px; line-height:1; user-select:none; padding:0 2px; flex-shrink:0;}
+.drag-handle:active{ cursor:grabbing; }
+.drag-item.dragging{ opacity:.4; }
+.drag-item.drag-over{ border-top:2px solid var(--accent); box-shadow:0 -2px 0 var(--accent); }
+.swatch{ width:30px; height:30px; border-radius:6px; border:1px solid var(--line); flex-shrink:0; padding:0; cursor:pointer; background:none;}
+
+.chk-pill{ display:inline-flex; gap:4px; align-items:center; font-size:12px; font-weight:500; background:#f1f3f6; border:1px solid var(--line); border-radius:20px; padding:4px 11px; cursor:pointer; user-select:none; }
+html[data-theme="dark"] .chk-pill{ background:#262b35;}
+.chk-pill input{ margin:0; }
+.chk-pill.on{ background:#dbeafe; border-color:var(--accent); color:var(--accent-d); font-weight:700; }
+
+.tbl{ width:100%; border-collapse:collapse; font-size:12px;}
+.tbl th, .tbl td{ border:1px solid var(--line); padding:4px 6px; text-align:center;}
+.tbl th{ background:#f8f9fb; font-weight:600;}
+html[data-theme="dark"] .tbl th{ background:#262b35;}
+.tbl input, .tbl select{ border:1px solid var(--line); border-radius:5px; padding:3px 5px; width:100%; font-size:12px; min-width:0; background:var(--card); color:var(--ink);}
+
+.filtros-bar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px;}
+.filtros-bar input, .filtros-bar select{ flex:0 1 auto; min-width:120px; max-width:200px;}
+
+/* Print */
+.print-title{ display:none; }
+@media print{
+  @page{ size:A4 landscape; margin:6mm; }
+  html,body{ height:auto !important; overflow:hidden !important; }
+  body *{ visibility:hidden !important; }
+  .print-area, .print-area *{ visibility:visible !important; }
+  .print-area{ position:absolute; left:0; top:0; right:0; width:100%; overflow:hidden; }
+  .print-area .no-print{ display:none !important; }
+  body{ background:#fff; }
+  .print-title{ display:block; font-size:13px; font-weight:700; text-align:center;
+    padding:6px 0 8px 0; margin-bottom:8px; border-bottom:2px solid #1f2430;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .table-wrap{ border:none; box-shadow:none; overflow:hidden; max-height:none;}
+  table.cuad{ min-width:0; width:100%; border-collapse:collapse; font-size:9px; table-layout:fixed; }
+  table.cuad thead th{ position:static; padding:1px 0; width:auto;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  table.cuad thead th .th-btn{ cursor:default; }
+  table.cuad thead th .dnum{ font-size:10px; } table.cuad thead th .dlet{ font-size:8px; }
+  table.cuad th.namecol, table.cuad td.namecol{ position:static; width:80px; min-width:80px;
+    text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:2px 4px 2px 6px; font-size:8px; line-height:1.2;
+    background:#f1f3f6 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  table.cuad td.cell{ height:20px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  table.cuad td.cell.filled, table.cuad td.cell.sun, table.cuad td.cell.fest,
+  table.cuad td.cell[style], .dot, .stat, .tag{
+    -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏥 Cuadrantes Residencia<span class="sub" id="hSub"></span><span class="sub" style="margin-left:14px;font-size:11px;">v3.0</span></h1>
+  <span class="saved-tag" id="savedTag"></span>
+  <button class="btn sm ghost no-print" onclick="openCentro()">Centro</button>
+  <button class="btn sm ghost no-print" onclick="openTrabajadores()">Trabajadores</button>
+  <button class="btn sm ghost no-print" onclick="openTurnos()">Turnos</button>
+  <button class="btn sm ghost no-print" onclick="openCoberturas()">Coberturas</button>
+  <button class="btn sm ghost no-print" onclick="openAusencias()">Ausencias</button>
+  <button class="btn sm ghost no-print" onclick="openPlantillas()">Plantillas</button>
+  <button class="btn sm ghost no-print" onclick="openFestivos()">Festivos</button>
+  <button class="btn sm ghost no-print" onclick="openConfig()">Configuración</button>
+  <button class="btn sm ghost no-print" onclick="openInformes()">Informes</button>
+  <button class="btn sm ghost no-print" onclick="exportJSON()">Backup</button>
+  <label class="btn sm ghost no-print" style="cursor:pointer;">Importar
+    <input type="file" accept="application/json" style="display:none;" onchange="importJSON(event)">
+  </label>
+  <button class="btn sm ghost no-print" onclick="toggleTema()" id="themeBtn" title="Modo oscuro">🌙</button>
+  <button class="btn sm ghost no-print" onclick="borrarTodo()">Reset</button>
+</header>
+
+<main>
+  <div class="legal-notice no-print" id="legalNotice">
+    <span>⚠️ Revise el cuadrante final conforme al convenio, normativa laboral aplicable y necesidades reales del centro. Esta aplicación es una ayuda a la planificación y no garantiza cumplimiento legal automático.</span>
+    <span class="x" onclick="document.getElementById('legalNotice').style.display='none'">✕</span>
+  </div>
+  <div class="viability-warn no-print" id="viabilityWarn" style="display:none;"></div>
+
+  <section id="view-anios" class="view active">
+    <div class="crumbs"><span>Gestión de cuadrantes</span></div>
+    <div id="years-container"></div>
+  </section>
+
+  <section id="view-anio" class="view">
+    <div class="crumbs">
+      <a onclick="showView('anios')">Años</a><span class="sep">/</span>
+      <span id="crumb-anio"></span>
+    </div>
+    <div class="grid-months" id="months-container"></div>
+  </section>
+
+  <section id="view-mes" class="view">
+    <div class="crumbs">
+      <a onclick="showView('anios')">Años</a><span class="sep">/</span>
+      <a id="crumb-mes-anio" onclick="showView('anio')"></a><span class="sep">/</span>
+      <span id="crumb-mes"></span>
+    </div>
+    <div id="mes-content"></div>
+  </section>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal">
+    <button class="btn sm ghost closex no-print" onclick="closeModal()">✕</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<div class="sv-pop" id="sv-pop"></div>
+
+<script>
+/* =================================================================
+   CUADRANTES RESIDENCIA v3.0 — archivo único (vanilla JS)
+   Motor fiable: asignaciones con metadatos, ausencias por rango,
+   secuencia N→S→L, validador integral, cobertura con equivalencia,
+   findes configurables, modos de mes, generador con semilla+deshacer.
+   ================================================================= */
+
+/* ============ CONSTANTES ============ */
+const STORE_KEY = 'cuadrantes_residencia_v3';
+const BACKUP_KEYS = ['cuadrantes_residencia_backup_1','cuadrantes_residencia_backup_2','cuadrantes_residencia_backup_3','cuadrantes_residencia_backup_4','cuadrantes_residencia_backup_5'];
+const MESES_NOM = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DIAS_LET = ['D','L','M','X','J','V','S'];
+const BASICOS = ['M','T','N','S','L','VAC','BAJ','PER'];
+const ORIGEN_MANUAL='manual', ORIGEN_AUTO='automatico', ORIGEN_REGLA='regla', ORIGEN_AUSENCIA='ausencia';
+
+/* ============ HELPERS DE SEGURIDAD (Fase 0.1) ============ */
+function escaparHTML(v){ v = (v===null||v===undefined)?'':String(v);
+  return v.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
+function escaparAttr(v){ return escaparHTML(v); }
+
+/* ============ PRNG reproducible (Fase 0.3) ============ */
+function mulberry32(seed){
+  let a = seed>>>0;
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a>>>15, 1 | a);
+    t = t + Math.imul(t ^ t>>>7, 61 | t) ^ t;
+    return ((t ^ t>>>14) >>> 0) / 4294967296;
+  };
+}
+
+/* ============ DEFAULTS ============ */
+function defaultTurnos(){
+  return [
+    {code:'M',  nombre:'Mañana',    color:'#fef9c3', horas:7,  trabajo:true,  ausencia:false, bloqueaAuto:false, manual:true,  orden:1,  protected:true,  cubreCobertura:true, equivaleACobertura:[]},
+    {code:'T',  nombre:'Tarde',     color:'#dbeafe', horas:7,  trabajo:true,  ausencia:false, bloqueaAuto:false, manual:true,  orden:2,  protected:true,  cubreCobertura:true, equivaleACobertura:[]},
+    {code:'N',  nombre:'Noche',     color:'#e0e7ff', horas:10, trabajo:true,  ausencia:false, bloqueaAuto:false, manual:true,  orden:3,  protected:true,  cubreCobertura:true, equivaleACobertura:[]},
+    {code:'S',  nombre:'Saliente',  color:'#f3e8ff', horas:0,  trabajo:false, ausencia:false, bloqueaAuto:false, manual:true,  orden:4,  protected:true,  cubreCobertura:false,equivaleACobertura:[]},
+    {code:'L',  nombre:'Libre',     color:'#bbf7d0', horas:0,  trabajo:false, ausencia:false, bloqueaAuto:false, manual:true,  orden:5,  protected:true,  cubreCobertura:false,equivaleACobertura:[]},
+    {code:'VAC',nombre:'Vacaciones',color:'#c7d2fe', horas:0,  trabajo:false, ausencia:true,  bloqueaAuto:true,  manual:true,  orden:6,  protected:true,  cubreCobertura:false,equivaleACobertura:[]},
+    {code:'BAJ',nombre:'Baja',      color:'#e5e7eb', horas:0,  trabajo:false, ausencia:true,  bloqueaAuto:true,  manual:true,  orden:7,  protected:true,  cubreCobertura:false,equivaleACobertura:[]},
+    {code:'PER',nombre:'Permiso',   color:'#fbcfe8', horas:0,  trabajo:false, ausencia:true,  bloqueaAuto:true,  manual:true,  orden:8,  protected:true,  cubreCobertura:false,equivaleACobertura:[]},
+    {code:'FOR',nombre:'Formación', color:'#fed7aa', horas:8,  trabajo:true,  ausencia:false, bloqueaAuto:false, manual:true,  orden:9,  protected:false, cubreCobertura:false,equivaleACobertura:[]},
+    {code:'REF',nombre:'Refuerzo',  color:'#fee2e2', horas:7,  trabajo:true,  ausencia:false, bloqueaAuto:false, manual:true,  orden:10, protected:false, cubreCobertura:true, equivaleACobertura:['M','T']},
+  ];
+}
+function defaultConfig(){
+  return {
+    maxDiasConsecutivos:6,
+    minDescansosTrasNoche:1,
+    secuenciaNocheObligatoria:false,
+    sConsumeDescanso:false,
+    maxNochesConsecutivas:2,
+    maxTurnosMismoTipo:6,
+    permitirMananaTrasTarde:true,
+    permitirIncompatibles:false,
+    avisoExcesoHorasMensual:true,
+    umbralExcesoHorasMensual:180,
+    toleranciaSaldoMensual:8,
+    toleranciaSaldoAnual:40,
+    reglaFinde:'sabado-domingo', // sabado-domingo | contar-viernes-noche | contar-domingo-noche | completo
+    pesos:{ horasTotales:10, noches:8, tardes:7, mananas:7, finesSemana:8, domingos:6, festivos:7, evitarRepetirTurno:5, respetarPreferencias:9 }
+  };
+}
+function defaultRoles(){ return ['TCAE','Enfermería','Limpieza','Cocina','Recepción','Fisioterapia','Médico/a','Coordinación','Dirección']; }
+function defaultCoberturas(){
+  const base = [
+    ['laborable','M','TCAE',6],['laborable','M','Enfermería',2],
+    ['laborable','T','TCAE',4],['laborable','T','Enfermería',1],
+    ['laborable','N','TCAE',2],['laborable','N','Enfermería',1],
+    ['sabado','M','TCAE',6],['sabado','M','Enfermería',2],
+    ['sabado','T','TCAE',4],['sabado','T','Enfermería',1],
+    ['sabado','N','TCAE',2],['sabado','N','Enfermería',1],
+    ['domingo','M','TCAE',5],['domingo','M','Enfermería',2],
+    ['domingo','T','TCAE',4],['domingo','T','Enfermería',1],
+    ['domingo','N','TCAE',2],['domingo','N','Enfermería',1],
+    ['festivoLaborable','M','TCAE',5],['festivoLaborable','M','Enfermería',2],
+    ['festivoLaborable','T','TCAE',4],['festivoLaborable','T','Enfermería',1],
+    ['festivoLaborable','N','TCAE',2],['festivoLaborable','N','Enfermería',1],
+    ['festivoSabado','M','TCAE',5],['festivoSabado','M','Enfermería',2],
+    ['festivoSabado','T','TCAE',4],['festivoSabado','T','Enfermería',1],
+    ['festivoSabado','N','TCAE',2],['festivoSabado','N','Enfermería',1],
+    ['festivoDomingo','M','TCAE',5],['festivoDomingo','M','Enfermería',2],
+    ['festivoDomingo','T','TCAE',4],['festivoDomingo','T','Enfermería',1],
+    ['festivoDomingo','N','TCAE',2],['festivoDomingo','N','Enfermería',1],
+  ];
+  return base.map((b,i)=>({id:'cob'+i, tipoDia:b[0], turno:b[1], rol:b[2], min:b[3]}));
+}
+function festivosEspanaAnyo(anyo){
+  return [
+    {fecha:anyo+'-01-01', nombre:'Año Nuevo', tipo:'nacional'},
+    {fecha:anyo+'-01-06', nombre:'Reyes Magos', tipo:'nacional'},
+    {fecha:anyo+'-05-01', nombre:'Día del Trabajador', tipo:'nacional'},
+    {fecha:anyo+'-08-15', nombre:'Asunción de la Virgen', tipo:'nacional'},
+    {fecha:anyo+'-10-12', nombre:'Fiesta Nacional de España', tipo:'nacional'},
+    {fecha:anyo+'-11-01', nombre:'Todos los Santos', tipo:'nacional'},
+    {fecha:anyo+'-12-06', nombre:'Día de la Constitución', tipo:'nacional'},
+    {fecha:anyo+'-12-08', nombre:'Inmaculada Concepción', tipo:'nacional'},
+    {fecha:anyo+'-12-25', nombre:'Navidad', tipo:'nacional'},
+  ];
+}
+function festivosDemo(){
+  const out=[]; [2025,2026,2027].forEach(y=>out.push(...festivosEspanaAnyo(y)));
+  out.push({fecha:'2026-02-28', nombre:'Día de Andalucía', tipo:'autonomico'});
+  out.push({fecha:'2026-03-19', nombre:'San José', tipo:'autonomico'});
+  out.push({fecha:'2026-10-15', nombre:'Fiestas del municipio (ej.)', tipo:'local'});
+  return out;
+}
+// Demo coherente: 10 TCAE, 4 Enfermería (suficiente para M:6/T:4/N:2 con rotación)
+function trabajadoresDemo(){
+  const base = [
+    ['Ana','García López','TCAE'],['María','Fernández Ruiz','TCAE'],['Lucía','Martín Serrano','TCAE'],
+    ['Elena','Pérez Gómez','TCAE'],['Carmen','Sánchez Romero','TCAE'],['Isabel','Ramírez Ortega','TCAE'],
+    ['Rosa','Jiménez Delgado','TCAE'],['Nuria','Ruiz Ávila','TCAE'],['Pilar','Serrano Lozano','TCAE'],
+    ['Beatriz','Cano Medina','TCAE'],
+    ['Raquel','Gil Herrera','Enfermería'],['Paula','Molina Castro','Enfermería'],
+    ['Cristina','Moreno Cano','Enfermería'],['Sara','Ramos Vega','Enfermería'],
+    ['Sofía','Lozano Vega','Limpieza'],['Patricia','Herrera Nieto','Limpieza'],
+    ['Javier','Cano Bravo','Cocina'],['Diego','Marín Peña','Recepción'],
+    ['Marta','Ibáñez Flores','Fisioterapia'],['Pedro','Castro Ríos','Médico/a'],
+  ];
+  return base.map((b,i)=>{
+    const turnosPermitidos = b[2]==='Médico/a' ? ['M','T'] : ['M','T','N'];
+    return {
+      id:'t'+(i+1), nombre:b[0], apellidos:b[1], nombreCompleto:b[1]+', '+b[0], activo:true, rol:b[2],
+      jornada:{ horasAnualesObjetivo:1792, horasMensualesObjetivo:null, horasSemanalesObjetivo:40, porcentajeJornada:100 },
+      preferencias:{ turnosPermitidos, soloTurnos:false, soloTurnosTipo:'', noTrabajaNoches: b[2]==='Médico/a', noTrabajaFinesSemana:false, maxDiasConsecutivos:null, minDescansosTrasNoche:null, diasNoDisponibles:[], restriccionesSemanales:[] },
+      saldoInicialHoras:0, observaciones:''
+    };
+  });
+}
+function plantillasDemo(){
+  return [
+    {id:'plt1', nombre:'Mañanas rotativa', secuencia:['M','M','M','M','M','L','L']},
+    {id:'plt2', nombre:'Noches (N-S-L)', secuencia:['N','S','L','L','M','M','M']},
+    {id:'plt3', nombre:'Tarde rotativa', secuencia:['T','T','T','T','T','L','L']},
+  ];
+}
+function defaultState(){
+  return {
+    version:3,
+    centro:{ nombre:'Residencia Nuestra Señora de la Paz', localidad:'Sevilla', comunidadAutonoma:'Andalucía', anyoActivo:2026, modoMes:'natural' },
+    trabajadores: trabajadoresDemo(),
+    roles: defaultRoles(),
+    tiposTurno: defaultTurnos(),
+    config: defaultConfig(),
+    festivos: festivosDemo(),
+    coberturas: defaultCoberturas(),
+    ausencias: [],
+    plantillas: plantillasDemo(),
+    cuadrantes:{},
+    historialGeneraciones:[],
+    descansosPendientes:[],
+    actualizadoEn: nowISO(),
+    actualizadoPor: 'local'
+  };
+}
+
+let state;
+function nowISO(){ try{ return new Date().toISOString(); }catch(e){ return ''; } }
+function uid(p){ return p+Math.random().toString(36).slice(2,9); }
+
+/* ============ LOAD / MIGRATE / SAVE (Fase 0.2 + 0.3) ============ */
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){ const s = JSON.parse(raw); if(s){ migrate(s); return s; } }
+    // intento de migrar desde v2 si no hay v3
+    const rawV2 = localStorage.getItem('cuadrantes_residencia_v2');
+    if(rawV2){ try{ const s2 = JSON.parse(rawV2); if(s2){ migrate(s2); save(s2); return s2; } }catch(e){} }
+  }catch(e){ console.warn('load error',e); }
+  const s = defaultState(); save(s); return s;
+}
+function migrate(s){
+  if(!s.version || s.version < 3){
+    // convertir asignaciones de string -> objeto
+    (s.cuadrantes||{}).forEach==null; // noop guard
+    Object.keys(s.cuadrantes||{}).forEach(y=>{
+      const a = s.cuadrantes[y];
+      (a.meses||{});
+      Object.keys(a.meses||{}).forEach(idx=>{
+        const m = a.meses[idx];
+        if(!m) return;
+        if(!m.notasDia) m.notasDia = {};
+        if(m.asignaciones){
+          Object.keys(m.asignaciones).forEach(k=>{
+            const v = m.asignaciones[k];
+            if(typeof v === 'string'){
+              m.asignaciones[k] = { turno:v, origen: ORIGEN_MANUAL, bloqueado:false, nota:'', actualizadoEn:'', actualizadoPor:'' };
+            }
+          });
+        }
+      });
+    });
+    s.version = 3;
+  }
+  // rellenar campos nuevos
+  if(!s.centro) s.centro = defaultState().centro;
+  if(!s.centro.modoMes) s.centro.modoMes = 'natural';
+  if(!s.trabajadores) s.trabajadores = [];
+  if(!s.roles) s.roles = defaultRoles();
+  if(!s.tiposTurno) s.tiposTurno = defaultTurnos();
+  if(!s.config) s.config = defaultConfig();
+  if(!s.config.reglaFinde) s.config.reglaFinde = 'sabado-domingo';
+  if(!s.config.pesos) s.config.pesos = defaultConfig().pesos;
+  if(!s.festivos) s.festivos = [];
+  if(!s.coberturas) s.coberturas = defaultCoberturas();
+  if(!s.ausencias) s.ausencias = [];
+  if(!s.plantillas) s.plantillas = plantillasDemo();
+  if(!s.cuadrantes) s.cuadrantes = {};
+  if(!s.historialGeneraciones) s.historialGeneraciones = [];
+  if(!s.descansosPendientes) s.descansosPendientes = [];
+  // trabajadores: backfill
+  s.trabajadores.forEach(t=>{
+    if(!t.preferencias) t.preferencias = {turnosPermitidos:['M','T','N'],soloTurnos:false,soloTurnosTipo:'',noTrabajaNoches:false,noTrabajaFinesSemana:false,maxDiasConsecutivos:null,minDescansosTrasNoche:null,diasNoDisponibles:[],restriccionesSemanales:[]};
+    if(!t.jornada) t.jornada = {horasAnualesObjetivo:1792,horasMensualesObjetivo:null,horasSemanalesObjetivo:40,porcentajeJornada:100};
+    if(t.activo===undefined) t.activo = true;
+    if(t.saldoInicialHoras===undefined) t.saldoInicialHoras = 0;
+    if(!t.nombreCompleto) t.nombreCompleto = (t.apellidos||'')+', '+(t.nombre||'');
+    if(!Array.isArray(t.preferencias.turnosPermitidos)) t.preferencias.turnosPermitidos=['M','T','N'];
+  });
+  // turnos: cubreCobertura/equivaleACobertura
+  s.tiposTurno.forEach(t=>{
+    if(t.cubreCobertura===undefined) t.cubreCobertura = !!t.trabajo && !['S','L'].includes(t.code);
+    if(!t.equivaleACobertura) t.equivaleACobertura = [];
+  });
+  // turnos básicos presentes
+  const existingCodes = new Set(s.tiposTurno.map(x=>x.code));
+  BASICOS.forEach(code=>{
+    if(!existingCodes.has(code)){
+      const def = defaultTurnos().find(t=>t.code===code);
+      if(def){ def.protected = true; s.tiposTurno.push(def); }
+    } else {
+      s.tiposTurno.find(t=>t.code===code).protected = true;
+    }
+  });
+  // expandir coberturas antiguas 'festivo' en variantes granulares
+  if(s.coberturas.some(c=>c.tipoDia==='festivo')){
+    const nuevos = [];
+    s.coberturas.filter(c=>c.tipoDia==='festivo').forEach(c=>{
+      ['festivoLaborable','festivoSabado','festivoDomingo'].forEach(td=> nuevos.push({id:uid('cob'),tipoDia:td,turno:c.turno,rol:c.rol,min:c.min}) );
+    });
+    s.coberturas = s.coberturas.filter(c=>c.tipoDia!=='festivo').concat(nuevos);
+  }
+  s.actualizadoEn = s.actualizadoEn || nowISO();
+  s.actualizadoPor = s.actualizadoPor || 'local';
+}
+function save(s, opts){
+  if(s) state = s;
+  state.actualizadoEn = nowISO();
+  // backup rotatorio (no en cada save silencioso para no llenar)
+  if(!opts || !opts.silent){
+    try{
+      // desplazar backups: 5<-4<-3<-2<-1<-actual
+      for(let i=BACKUP_KEYS.length-1;i>0;i--){
+        const prev = localStorage.getItem(BACKUP_KEYS[i-1]);
+        if(prev) localStorage.setItem(BACKUP_KEYS[i], prev);
+      }
+      localStorage.setItem(BACKUP_KEYS[0], JSON.stringify(state));
+    }catch(e){ console.warn('backup rotation failed', e); }
+    actualizarSavedTag();
+  }
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){ console.warn('save error',e); }
+}
+function actualizarSavedTag(){
+  const el = document.getElementById('savedTag');
+  if(el) el.textContent = '💾 ' + new Date(state.actualizadoEn).toLocaleTimeString();
+}
+
+/* ============ HELPERS FECHA ============ */
+function fmt(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),da=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${da}`; }
+function parse(str){ const [y,m,d]=str.split('-').map(Number); return new Date(y,m-1,d); }
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function diasEntre(ini,fin){ const out=[]; let d=new Date(ini); const f=new Date(fin); while(d<=f){ out.push(new Date(d)); d=addDays(d,1);} return out; }
+// A qué mes natural (0..11) pertenece una fecha (para atribución correcta en modo operativo)
+function mesNaturalDe(anyo, fechaStr){ const d = parse(fechaStr); return d.getMonth(); }
+
+/* ============ HELPERS DE TURNOS ============ */
+function turnoPorCode(code){ return state.tiposTurno.find(t=>t.code===code); }
+function turnoEsTrabajo(code){ const t=turnoPorCode(code); return !!(t&&t.trabajo); }
+function turnoEsAusencia(code){ const t=turnoPorCode(code); return !!(t&&t.ausencia); }
+function turnoBloqueaAuto(code){ const t=turnoPorCode(code); return !!(t&&t.bloqueaAuto); }
+function turnoManual(code){ const t=turnoPorCode(code); return !t || (t.manual!==false); }
+function isTurnoBasico(code){ return BASICOS.includes(code); }
+// Cubre cobertura: un trabajador con este code cuenta para el bucket del turno base bt
+function cubreElTurno(code, bt){
+  if(code===bt) return true;
+  const t = turnoPorCode(code);
+  if(!t || !t.cubreCobertura) return false;
+  return (t.equivaleACobertura||[]).includes(bt);
+}
+function textColorSobre(bg){
+  if(!bg) return 'var(--ink)';
+  const c = bg.replace('#',''); if(c.length<6) return 'var(--ink)';
+  const r=parseInt(c.substr(0,2),16), g=parseInt(c.substr(2,2),16), b=parseInt(c.substr(4,2),16);
+  const lum = (0.299*r + 0.587*g + 0.114*b)/255;
+  return lum>0.55 ? '#1f2430' : '#ffffff';
+}
+function displayCorto(code){ return code; }
+
+/* ============ ACCESSORES DE ASIGNACIONES (Fase 1) ============ */
+// El key usa '_' para separar tid y fecha (formato estable)
+function aKey(tid, fecha){ return tid + '_' + fecha; }
+function getAnyo(anyo){ if(!state.cuadrantes[anyo]) state.cuadrantes[anyo] = { meses:{} }; return state.cuadrantes[anyo]; }
+function getMes(anyo, idx){ const a=getAnyo(anyo); if(!a.meses[idx]){ a.meses[idx] = { inicio:null, fin:null, asignaciones:{}, notasDia:{}, idx:idx }; } if(a.meses[idx].idx===undefined) a.meses[idx].idx=idx; if(!a.meses[idx].notasDia) a.meses[idx].notasDia={}; return a.meses[idx]; }
+// Encuentra el mes (de cualquier año) que contiene una fecha
+function mesQueContiene(fechaStr){
+  for(const y of Object.keys(state.cuadrantes)){
+    const a = state.cuadrantes[y];
+    for(let i=0;i<12;i++){ const m=a.meses[i]; if(m && m.inicio && m.fin && fechaStr>=m.inicio && fechaStr<=m.fin) return {anyo:Number(y), idx:i, mes:m}; }
+  }
+  return null;
+}
+function getAsig(m, tid, fecha){ const k=aKey(tid,fecha); const v = m.asignaciones[k]; return (v && typeof v==='object') ? v : null; }
+function getCodigo(m, tid, fecha){ const a=getAsig(m,tid,fecha); return a ? a.turno : ''; }
+function getCodigoMes(anyo, idx, tid, fecha){ const m = state.cuadrantes[anyo] && state.cuadrantes[anyo].meses[idx]; return m ? getCodigo(m,tid,fecha) : ''; }
+function setAsig(m, tid, fecha, code, meta){
+  const k = aKey(tid, fecha);
+  if(!code){ delete m.asignaciones[k]; return; }
+  const prev = (m.asignaciones[k] && typeof m.asignaciones[k]==='object') ? m.asignaciones[k] : null;
+  m.asignaciones[k] = {
+    turno: code,
+    origen: (meta && meta.origen) || prev?.origen || ORIGEN_MANUAL,
+    bloqueado: (meta && meta.bloqueado!==undefined) ? meta.bloqueado : (prev?.bloqueado || false),
+    nota: (meta && meta.nota!==undefined) ? meta.nota : (prev?.nota || ''),
+    actualizadoEn: nowISO(),
+    actualizadoPor: 'local'
+  };
+}
+function delAsig(m, tid, fecha){ delete m.asignaciones[aKey(tid,fecha)]; }
+function isBloqueadaAsig(asig){ return !!(asig && asig.bloqueado); }
+function isAusenciaAsig(asig){ return !!(asig && asig.turno && turnoEsAusencia(asig.turno)); }
+function isManualOReglaBloqueada(asig){ return !!(asig && (asig.bloqueado || asig.origen===ORIGEN_MANUAL)); }
+
+/* ============ TIPO DE DÍA (Fase 5) ============ */
+function tipoDiaDe(d){
+  const ds=fmt(d); const dow=d.getDay();
+  const fest = state.festivos.find(f=>f.fecha===ds);
+  if(fest){
+    if(dow===0) return 'festivoDomingo';
+    if(dow===6) return 'festivoSabado';
+    return 'festivoLaborable';
+  }
+  if(dow===0) return 'domingo';
+  if(dow===6) return 'sabado';
+  return 'laborable';
+}
+// ¿una cobertura de tipo cT aplica al tipoDia real td?
+function coberturaAplica(cT, td){
+  if(cT===td) return true;
+  if(cT==='domingo' && td==='festivoDomingo') return true;
+  if(cT==='sabado' && td==='festivoSabado') return true;
+  if(cT==='festivoLaborable' && (td==='festivoSabado'||td==='festivoDomingo')) return false;
+  return false;
+}
+
+/* ============ VISTAS: render ============ */
+let curAnyo=null, curMesIdx=null;
+function showView(name){
+  ['anios','anio','mes'].forEach(v=>{ const el=document.getElementById('view-'+v); if(el) el.classList.toggle('active', v===name); });
+  if(name==='anios') renderAnios();
+  if(name==='anio') renderAnio();
+}
+
+/* ---- Vista Años ---- */
+function renderAnios(){
+  const c = document.getElementById('years-container');
+  document.getElementById('hSub').textContent = '· '+(state.centro.nombre||'');
+  const anyos = Object.keys(state.cuadrantes).map(Number).filter(n=>!isNaN(n)).sort((a,b)=>a-b);
+  comprobarViabilidad();
+  if(!anyos.length){
+    c.innerHTML = `<div class="empty-state"><div class="big">🏥</div>
+      <p>No hay años creados todavía.</p>
+      <p style="margin-top:8px;">Crea el primer año para empezar a planificar los cuadrantes.</p>
+      <button class="btn primary" style="margin-top:16px;" onclick="addAnyo()">+ Crear año</button></div>`;
+    return;
+  }
+  c.innerHTML = `<div class="grid-years">`+ anyos.map(y=>{
+    const a = state.cuadrantes[y]; let filled=0;
+    for(let i=0;i<12;i++){ if(a.meses[i] && a.meses[i].inicio && a.meses[i].fin) filled++; }
+    const esActivo = y===state.centro.anyoActivo;
+    return `<div class="year-card" ${esActivo?'style="border-color:var(--accent);border-width:2px;"':''} onclick="enterAnyo(${y})">
+      <button class="btn sm ghost del" onclick="event.stopPropagation();delAnyo(${y})" title="Borrar">🗑</button>
+      <div class="y">${y}</div>
+      <div class="meta">${filled}/12 meses definidos ${esActivo?'· <b>Año activo</b>':''}</div>
+    </div>`;
+  }).join('') + `<div class="year-card" style="border-style:dashed;display:flex;align-items:center;justify-content:center;color:var(--muted);min-height:108px;" onclick="addAnyo()">+ Nuevo año</div></div>`;
+}
+function addAnyo(){
+  const prox = Object.keys(state.cuadrantes).length ? Math.max(...Object.keys(state.cuadrantes).map(Number))+1 : state.centro.anyoActivo;
+  promptBox('Crear año',[{label:'Año',type:'number',value:prox,name:'anyo'}],(vals)=>{
+    const y = parseInt(vals.anyo); if(!y) return false;
+    if(state.cuadrantes[y]){ alert('Ese año ya existe.'); return false; }
+    state.cuadrantes[y] = { meses:{} };
+    for(let i=0;i<12;i++) state.cuadrantes[y].meses[i] = { inicio:null, fin:null, asignaciones:{}, notasDia:{}, idx:i };
+    save(state); renderAnios();
+  });
+}
+function delAnyo(y){ if(!confirm(`¿Borrar el año ${y} y todos sus cuadrantes?`)) return; delete state.cuadrantes[y]; save(state); renderAnios(); }
+
+/* ---- Vista Año ---- */
+function enterAnyo(y){ curAnyo=y; showView('anio'); }
+function renderAnio(){
+  if(!curAnyo) return;
+  document.getElementById('crumb-anio').textContent = curAnyo;
+  document.getElementById('hSub').textContent = `· ${state.centro.nombre} · ${curAnyo}`;
+  const a = state.cuadrantes[curAnyo]; const c = document.getElementById('months-container');
+  let html='';
+  for(let i=0;i<12;i++){
+    const m = a.meses[i] || {inicio:null,fin:null};
+    const filled = m.inicio && m.fin;
+    const rango = filled ? `${fmt(parse(m.inicio))} → ${fmt(parse(m.fin))}` : 'Sin definir';
+    html += `<div class="month-card ${filled?'filled':''}" onclick="enterMes(${i})">
+      <div class="m-name">${MESES_NOM[i]}</div><div class="m-range">${rango}</div>
+      <div class="m-badge">${filled?'Definido':'Pendiente'}</div></div>`;
+  }
+  c.innerHTML = html;
+}
+
+/* ---- Definir rango de mes (con modo natural/operativo) ---- */
+function rangoSugerido(anyo, idx){
+  const modo = state.centro.modoMes || 'natural';
+  if(modo==='natural'){
+    // día 1 → último día natural
+    const ultimoDia = new Date(anyo, idx+1, 0);
+    return { ini:`${anyo}-${String(idx+1).padStart(2,'0')}-01`, fin: fmt(ultimoDia) };
+  }
+  // operativo: semanas completas lun→dom
+  const primero = new Date(anyo, idx, 1);
+  let lunIni = new Date(primero);
+  if(lunIni.getDay()!==1){ lunIni = addDays(lunIni, -( (lunIni.getDay()+6)%7 )); }
+  const ultimoDia = new Date(anyo, idx+1, 0);
+  let domFin = new Date(ultimoDia);
+  if(domFin.getDay()!==0){ domFin = addDays(domFin, 7-domFin.getDay()); }
+  return { ini: fmt(lunIni), fin: fmt(domFin) };
+}
+function defineRangoMes(idx){
+  const m = getMes(curAnyo, idx);
+  const sug = rangoSugerido(curAnyo, idx);
+  let sIni = sug.ini, sFin = sug.fin;
+  // ajustes por meses contiguos definidos (continuidad)
+  const prev = state.cuadrantes[curAnyo].meses[idx-1];
+  if(prev && prev.fin) sIni = fmt(addDays(parse(prev.fin),1));
+  const next = state.cuadrantes[curAnyo].meses[idx+1];
+  if(next && next.inicio) sFin = fmt(addDays(parse(next.inicio),-1));
+  if(m.inicio) sIni = m.inicio; if(m.fin) sFin = m.fin;
+  promptBox(`Definir ${MESES_NOM[idx]} <span class="hint">(${state.centro.modoMes})</span>`,[
+    {label:'Fecha inicio',type:'date',value:sIni,name:'ini'},
+    {label:'Fecha fin',   type:'date',value:sFin,name:'fin'}
+  ],(vals)=>{
+    if(!vals.ini||!vals.fin){ alert('Indica ambas fechas.'); return false; }
+    if(parse(vals.fin) < parse(vals.ini)){ alert('La fecha fin debe ser posterior a la inicio.'); return false; }
+    m.inicio=vals.ini; m.fin=vals.fin; save(state);
+    proyectarAusenciasEnMes(m);
+    aplicarDescansosPendientesEnMes(m);
+    renderAnio(); renderMes();
+  });
+}
+
+/* ---- Vista Mes ---- */
+function enterMes(idx){
+  const m = getMes(curAnyo, idx);
+  if(!m.inicio || !m.fin){ defineRangoMes(idx); return; }
+  curMesIdx = idx; showView('mes'); renderMes();
+  localStorage.setItem('cuadrantes_last_view', JSON.stringify({anyo:curAnyo, mesIdx:idx}));
+}
+function cambiarMes(delta){
+  let n = curMesIdx + delta;
+  if(n<0){ alert('Ya estás en el primer mes del año.'); return; }
+  if(n>11){ alert('Fin del año. Crea o entra en el año siguiente.'); return; }
+  const m = getMes(curAnyo, n);
+  if(!m.inicio || !m.fin){ defineRangoMes(n); return; }
+  curMesIdx = n; showView('mes'); renderMes();
+  localStorage.setItem('cuadrantes_last_view', JSON.stringify({anyo:curAnyo, mesIdx:n}));
+}
+
+// filtros de vista mes
+let _vistaMes = { rol:'', mostrarInactivos:false, panelAlertas:true };
+function getTrabajadoresVisibles(){
+  let ts = state.trabajadores.slice();
+  if(!_vistaMes.mostrarInactivos) ts = ts.filter(t=>t.activo);
+  if(_vistaMes.rol) ts = ts.filter(t=>t.rol===_vistaMes.rol);
+  return ts;
+}
+
+function renderMes(){
+  const m = getMes(curAnyo, curMesIdx);
+  document.getElementById('crumb-mes').textContent = MESES_NOM[curMesIdx];
+  document.getElementById('crumb-mes-anio').textContent = curAnyo;
+  document.getElementById('hSub').textContent = `· ${state.centro.nombre} · ${curAnyo} · ${MESES_NOM[curMesIdx]}`;
+
+  const dias = diasEntre(parse(m.inicio), parse(m.fin));
+  const tMap = {}; state.tiposTurno.forEach(t=>tMap[t.code]=t);
+  const trabajadores = getTrabajadoresVisibles();
+  const mesNaturalIdx = curMesIdx;
+  const covPorDia = calcularCoberturaMes(m, dias);
+
+  // CABECERA
+  const thead = document.createElement('thead'); const headRow = document.createElement('tr');
+  const th0 = document.createElement('th'); th0.className='namecol'; th0.textContent='Trabajador'; headRow.appendChild(th0);
+  dias.forEach(d=>{
+    const dn=d.getDate(), dl=DIAS_LET[d.getDay()], isSun=d.getDay()===0;
+    const ds=fmt(d);
+    const fest = state.festivos.find(f=>f.fecha===ds);
+    const isFest = !!fest;
+    const tdTipo = tipoDiaDe(d);
+    const cls = (isSun||isFest) ? (isSun?'sun':'fest') : '';
+    const th = document.createElement('th'); th.className=cls; th.dataset.date=ds;
+    const fueraMes = (state.centro.modoMes==='operativo' && d.getMonth()!==mesNaturalIdx);
+    const cov = covPorDia[ds] || {estado:'ok'};
+    const dotCls = cov.estado==='bad'?'bad':(cov.estado==='warn'?'warn':'ok');
+    th.innerHTML = `<button class="th-btn" onclick="event.stopPropagation();editarDia('${ds}')" title="${fest?escaparAttr(fest.nombre)+': ':''}Editar día">
+        <span class="dnum">${dn}</span><span class="dlet">${dl}</span>
+        <span class="cov-dot ${dotCls}" title="Cobertura: ${escaparAttr(cov.resumen||'')}"></span>
+        ${isFest?`<span class="fest-name" title="${escaparAttr(fest.nombre)}">${escaparHTML(fest.nombre)}</span>`:''}
+      </button>`;
+    headRow.appendChild(th);
+  });
+  thead.appendChild(headRow);
+
+  // FILAS
+  const tbody = document.createDocumentFragment();
+  trabajadores.forEach(t=>{
+    const tr = document.createElement('tr');
+    const tdN = document.createElement('td'); tdN.className='namecol';
+    tdN.innerHTML = `<span class="rol">${escaparHTML(t.rol||'')}</span>
+      <span class="nm">${escaparHTML(t.nombreCompleto||t.nombre||'')}</span>
+      <div class="row-tools">
+        <button onclick="copiarFila('${t.id}')" title="Copiar fila">⧉</button>
+        <button onclick="pegarFila('${t.id}')" title="Pegar fila">📋</button>
+      </div>`;
+    tr.appendChild(tdN);
+    dias.forEach(d=>{
+      const ds=fmt(d); const td = document.createElement('td');
+      const isSun=d.getDay()===0; const isFest=!!state.festivos.find(f=>f.fecha===ds);
+      const code = getCodigo(m, t.id, ds);
+      const asig = getAsig(m, t.id, ds);
+      let cls='cell'; if(isSun)cls+=' sun'; if(isFest)cls+=' fest';
+      if(state.centro.modoMes==='operativo' && d.getMonth()!==mesNaturalIdx) cls+=' fuera-mes';
+      td.className=cls; td.dataset.tid=t.id; td.dataset.fecha=ds;
+      if(code && tMap[code]){
+        const tn=tMap[code]; const txt=textColorSobre(tn.color);
+        td.style.background = tn.color;
+        const lock = (asig && asig.bloqueado) ? '<span class="lock">🔒</span>' : '';
+        const noteDot = (asig && asig.nota) ? `<span class="note-dot" title="${escaparAttr(asig.nota)}">•</span>` : '';
+        const tagCls = asig && asig.origen===ORIGEN_AUTO ? 'opacity:.9;' : '';
+        td.innerHTML = `<button onclick="openSvPop(event,'${t.id}','${ds}')" style="color:${txt};${tagCls}">${escaparHTML(displayCorto(code))}</button>${lock}${noteDot}`;
+      } else {
+        td.innerHTML = `<button onclick="openSvPop(event,'${t.id}','${ds}')" style="opacity:.25;">·</button>`;
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  const tabla = document.createElement('table'); tabla.className='cuad';
+  const tb = document.createElement('tbody'); tb.appendChild(tbody);
+  tabla.appendChild(thead); tabla.appendChild(tb);
+
+  const legendHtml = `<div class="legend">${
+    [...state.tiposTurno].sort((a,b)=>(a.orden||99)-(b.orden||99)).map(t=>
+      `<span class="lg"><span class="dot" style="background:${t.color};"></span><b>${escaparHTML(t.code)}</b> ${escaparHTML(t.nombre)}</span>`).join('')
+  }</div>`;
+
+  const filtrosRol = [''].concat(state.roles).map(r=>`<option value="${escaparAttr(r)}" ${_vistaMes.rol===r?'selected':''}>${escaparHTML(r||'(todos los roles)')}</option>`).join('');
+  const bar = `<div class="month-bar no-print">
+    <button class="btn sm" onclick="cambiarMes(-1)" title="Mes anterior">‹</button>
+    <h2>${MESES_NOM[curMesIdx]} ${curAnyo}</h2>
+    <button class="btn sm" onclick="cambiarMes(1)" title="Mes siguiente">›</button>
+    <span class="range-pill">${fmt(parse(m.inicio))} → ${fmt(parse(m.fin))} (${state.centro.modoMes})</span>
+    <select onchange="_vistaMes.rol=this.value;renderMes()" style="max-width:140px;">${filtrosRol}</select>
+    <label class="chk-pill ${_vistaMes.mostrarInactivos?'on':''}"><input type="checkbox" ${_vistaMes.mostrarInactivos?'checked':''} onchange="_vistaMes.mostrarInactivos=this.checked;renderMes()"> Inactivos</label>
+    <button class="btn primary sm" onclick="generarConUI()">⚙ Generar</button>
+    <button class="btn sm" onclick="deshacerGeneracion()" title="Deshacer última generación">↶ Deshacer</button>
+    <button class="btn sm" onclick="compararVersiones()" title="Comparar con la última generación">🔍 Comparar</button>
+    <button class="btn sm" onclick="openVistaDiaria()">📆 Vista diaria</button>
+    <button class="btn sm" onclick="clearMes()">🧹 Limpiar</button>
+    <button class="btn sm" onclick="defineRangoMes(${curMesIdx})">Editar rango</button>
+    <button class="btn sm" onclick="exportPDF()">🖨 PDF</button>
+  </div>`;
+
+  const contadores = renderContadores(m, dias);
+  const cobertura = renderCoberturaMes(m, dias, covPorDia);
+
+  const cont = document.getElementById('mes-content');
+  cont.innerHTML = bar;
+  const layout = document.createElement('div'); layout.className = 'mes-layout'+(_vistaMes.panelAlertas?'':' closed');
+  const mesMain = document.createElement('div'); mesMain.className='mes-main';
+  const printArea = document.createElement('div'); printArea.className='print-area';
+  printArea.innerHTML = `<div class="print-title">${escaparHTML(state.centro.nombre)} — ${MESES_NOM[curMesIdx]} ${curAnyo}</div>`;
+  const wrap = document.createElement('div'); wrap.className='table-wrap'; wrap.appendChild(tabla);
+  printArea.appendChild(wrap); printArea.insertAdjacentHTML('beforeend', legendHtml);
+  mesMain.appendChild(printArea);
+  const noprint = document.createElement('div'); noprint.className='no-print';
+  noprint.innerHTML = cobertura + contadores;
+  mesMain.appendChild(noprint);
+  layout.appendChild(mesMain);
+  // panel alertas
+  const panel = document.createElement('div'); panel.className='alerts-panel no-print';
+  panel.id='alertsPanel';
+  layout.appendChild(panel);
+  cont.appendChild(layout);
+  renderAlertasPanel();
+  habilitarAtajos();
+  habilitarSeleccionMultiple();
+}
+
+/* render puntual de una celda (evita reconstruir toda la tabla) */
+function renderCelda(tid, fecha){
+  const m = getMes(curAnyo, curMesIdx);
+  const td = document.querySelector(`table.cuad td.cell[data-tid="${cssEscape(tid)}"][data-fecha="${fecha}"]`);
+  if(!td) return;
+  const tMap = {}; state.tiposTurno.forEach(t=>tMap[t.code]=t);
+  const code = getCodigo(m, tid, fecha);
+  const asig = getAsig(m, tid, fecha);
+  // limpiar clases de color/extra pero conservar sun/fest/fuera-mes
+  td.style.background='';
+  td.innerHTML='';
+  if(code && tMap[code]){
+    const tn=tMap[code]; const txt=textColorSobre(tn.color);
+    td.style.background = tn.color;
+    const lock = (asig && asig.bloqueado) ? '<span class="lock">🔒</span>' : '';
+    const noteDot = (asig && asig.nota) ? `<span class="note-dot" title="${escaparAttr(asig.nota)}">•</span>` : '';
+    td.innerHTML = `<button onclick="openSvPop(event,'${tid}','${fecha}')" style="color:${txt};">${escaparHTML(displayCorto(code))}</button>${lock}${noteDot}`;
+  } else {
+    td.innerHTML = `<button onclick="openSvPop(event,'${tid}','${fecha}')" style="opacity:.25;">·</button>`;
+  }
+  td.classList.add('flash'); setTimeout(()=>td.classList.remove('flash'), 1000);
+  // refrescar cabecera de cobertura de ese día y panel
+  refrescarCoberturaDia(fecha);
+  renderAlertasPanel();
+}
+function refrescarCoberturaDia(fechaStr){
+  const m = getMes(curAnyo, curMesIdx);
+  const d = parse(fechaStr);
+  const th = document.querySelector(`table.cuad thead th[data-date="${fechaStr}"]`);
+  if(!th) return;
+  const cov = coberturaDia(m, d);
+  const dot = th.querySelector('.cov-dot');
+  if(dot){ dot.className='cov-dot '+(cov.estado==='bad'?'bad':(cov.estado==='warn'?'warn':'ok')); dot.title='Cobertura: '+cov.resumen; }
+}
+function cssEscape(s){ return String(s).replace(/[^a-zA-Z0-9_-]/g, m=>'\\'+m); }
+
+/* ============ COBERTURA (Fase 5) ============ */
+function coberturaDia(m, d){
+  const ds=fmt(d); const tipo=tipoDiaDe(d);
+  const conteo={};
+  state.trabajadores.forEach(t=>{
+    const code = getCodigo(m, t.id, ds);
+    if(!code || !turnoEsTrabajo(code)) return;
+    const rol = t.rol || '—';
+    // para cada turno base configurado, ¿este code lo cubre?
+    state.tiposTurno.forEach(bt=>{
+      if(bt.trabajo && bt.cubreCobertura && cubreElTurno(code, bt.code)){
+        const k = bt.code+'|'+rol; conteo[k]=(conteo[k]||0)+1;
+      }
+    });
+  });
+  const alerts=[]; let estado='ok', resumen='';
+  const relevantes = state.coberturas.filter(c=>coberturaAplica(c.tipoDia, tipo));
+  relevantes.forEach(c=>{ const k=c.turno+'|'+c.rol; const real=conteo[k]||0; if(real<c.min){ alerts.push(`${c.rol} ${c.turno}: ${real}/${c.min}`); estado='bad'; } });
+  let overs=0; relevantes.forEach(c=>{ const k=c.turno+'|'+c.rol; const real=conteo[k]||0; if(real>c.min+3) overs++; });
+  if(estado==='ok' && overs>0) estado='warn';
+  resumen = alerts.length ? 'Faltan: '+alerts.join(', ') : (overs?'Excedente':'Completo');
+  return { estado, alerts, resumen, conteo, tipo };
+}
+function calcularCoberturaMes(m, dias){ const out={}; dias.forEach(d=> out[fmt(d)]=coberturaDia(m,d)); return out; }
+function renderCoberturaMes(m, dias, covPorDia){
+  const alertsGlobal=[];
+  dias.forEach(d=>{ const c=covPorDia[fmt(d)]; if(c&&c.alerts&&c.alerts.length) c.alerts.forEach(a=>alertsGlobal.push(`${fmt(d)} (${DIAS_LET[d.getDay()]}): ${a}`)); });
+  let alertasHtml = alertsGlobal.length
+    ? `<div class="cov-alerts"><b>⚠ Déficits de cobertura (${alertsGlobal.length}):</b><ul>${alertsGlobal.slice(0,40).map(a=>`<li>${escaparHTML(a)}</li>`).join('')}</ul>${alertsGlobal.length>40?`<li>... y ${alertsGlobal.length-40} más</li>`:''}</div>`
+    : `<div class="cov-ok-box">✓ Cobertura mínima cumplida todos los días del mes.</div>`;
+  const turnosTrabajo = state.tiposTurno.filter(t=>t.trabajo && t.cubreCobertura).map(t=>t.code);
+  const matriz = dias.map(d=>{
+    const ds=fmt(d); const c=covPorDia[ds];
+    const row = turnosTrabajo.map(tc=>{
+      let parts = state.roles.map(r=>{
+        const real = c.conteo[tc+'|'+r]||0;
+        const min = (state.coberturas.find(x=>coberturaAplica(x.tipoDia,c.tipoDia)&&x.turno===tc&&x.rol===r)||{}).min||0;
+        if(!min && !real) return '';
+        const cls = real<min?'bad':(real>min+3?'over':'ok');
+        return `<span class="cov-chip ${cls}">${escaparHTML(r[0])}:${real}${min?'/'+min:''}</span>`;
+      }).filter(Boolean).join(' ');
+      return `<td>${parts||'—'}</td>`;
+    }).join('');
+    return `<tr><td>${ds} ${DIAS_LET[d.getDay()]}</td>${row}</tr>`;
+  });
+  const headMat = turnosTrabajo.map(tc=>`<th>${escaparHTML(tc)}</th>`).join('');
+  return `<div class="section-title">Cobertura del mes <span style="font-weight:400;color:var(--muted);font-size:12px;">(verde=ok · rojo=déficit · azul=excedente)</span><span class="line"></span></div>
+    ${alertasHtml}
+    <div style="overflow:auto; max-height:260px; border:1px solid var(--line); border-radius:8px;">
+      <table class="tbl"><thead><tr><th>Día</th>${headMat}</tr></thead><tbody>${matriz.join('')}</tbody></table>
+    </div>`;
+}
+
+/* ============ ESTADÍSTICAS / FINDES (Fase 6) ============ */
+// Decide si un trabajador trabajó el finde de un bloque V-S-D-L según reglaFinde
+function trabajoEnFinde(m, t, bloque){
+  const r = state.config.reglaFinde || 'sabado-domingo';
+  const cSab = getCodigo(m, t.id, bloque.sab);
+  const cDom = getCodigo(m, t.id, bloque.dom);
+  const cVie = getCodigo(m, t.id, bloque.vie);
+  const sabT = cSab && turnoEsTrabajo(cSab);
+  const domT = cDom && turnoEsTrabajo(cDom);
+  if(r==='sabado-domingo') return sabT || domT;
+  if(r==='completo') return sabT && domT;
+  if(r==='contar-viernes-noche'){ const vn = cVie==='N'; return sabT || domT || vn; }
+  if(r==='contar-domingo-noche'){ const dn = cDom==='N'; return sabT || domT || dn; }
+  return sabT || domT;
+}
+function bloquesFindes(m){
+  if(!m||!m.inicio||!m.fin) return [];
+  const dias = diasEntre(parse(m.inicio),parse(m.fin)); const out=[];
+  for(let i=0;i<dias.length;i++){
+    if(dias[i].getDay()===5){
+      const v=dias[i], sab=i+1<dias.length?dias[i+1]:null, dom=i+2<dias.length?dias[i+2]:null, lun=i+3<dias.length?dias[i+3]:null;
+      if(sab&&dom&&lun && sab.getDay()===6 && dom.getDay()===0 && lun.getDay()===1){
+        out.push({vie:fmt(v),sab:fmt(sab),dom:fmt(dom),lun:fmt(lun)});
+      }
+    }
+  }
+  return out;
+}
+function calcularStatsMes(m, dias){
+  const stats={};
+  state.trabajadores.forEach(t=> stats[t.id]={horas:0,M:0,T:0,N:0,S:0,L:0,festivos:0,domingos:0,sabados:0,findes:0,nochesFinde:0,ausencias:0});
+  const bloques = bloquesFindes(m);
+  dias.forEach(d=>{
+    const ds=fmt(d); const isDom=d.getDay()===0; const isSab=d.getDay()===6;
+    const fest = state.festivos.find(f=>f.fecha===ds);
+    state.trabajadores.forEach(t=>{
+      const a = getAsig(m, t.id, ds); if(!a) return;
+      const code=a.turno; const tn=turnoPorCode(code); if(!tn) return;
+      if(tn.trabajo){ stats[t.id].horas+=(tn.horas||0); if(code==='M')stats[t.id].M++; if(code==='T')stats[t.id].T++; if(code==='N')stats[t.id].N++; if(code==='S')stats[t.id].S++; if(fest)stats[t.id].festivos++; if(isDom)stats[t.id].domingos++; if(isSab)stats[t.id].sabados++; }
+      if(code==='L') stats[t.id].L++;
+      if(tn.ausencia) stats[t.id].ausencias++;
+    });
+  });
+  bloques.forEach(b=> state.trabajadores.forEach(t=>{ if(trabajoEnFinde(m,t,b)) stats[t.id].findes++; }));
+  return stats;
+}
+
+/* Acumulado anual atribuyendo cada asignación a su MES NATURAL (no al grid) */
+function calcularStatsAnyo(anyo){
+  const stats={};
+  state.trabajadores.forEach(t=> stats[t.id]={horas:0,M:0,T:0,N:0,S:0,L:0,festivos:0,domingos:0,sabados:0,findes:0,ausencias:0,porMes:{}});
+  const a = state.cuadrantes[anyo]; if(!a) return stats;
+  // recorrer días naturales 1..12
+  for(let mn=0; mn<12; mn++){
+    const diasNat = diasEntre(parse(anyo+'-'+String(mn+1).padStart(2,'0')+'-01'), parse(anyo+'-'+String(mn+2).padStart(2,'0')+'-01')>=0?addDays(new Date(anyo,mn+1,0),0):new Date(anyo,mn+1,0));
+    // correcto: último día natural del mes mn
+    const diasMesNat = diasEntre(new Date(anyo,mn,1), new Date(anyo,mn+1,0));
+    const bloquesPorFecha={};
+    // encontrar bloques finde del/los mes(es) grid que contengan estas fechas
+    diasMesNat.forEach(d=>{
+      const ds=fmt(d); const isDom=d.getDay()===0; const isSab=d.getDay()===6;
+      const fest = state.festivos.find(f=>f.fecha===ds);
+      state.trabajadores.forEach(t=>{
+        // buscar asignación en cualquier mes grid que contenga ds
+        const info = mesQueContiene(ds);
+        let code=''; if(info){ code = getCodigo(info.mes, t.id, ds); }
+        if(!code) return;
+        const tn=turnoPorCode(code); if(!tn) return;
+        if(tn.trabajo){ stats[t.id].horas+=(tn.horas||0); if(code==='M')stats[t.id].M++; if(code==='T')stats[t.id].T++; if(code==='N')stats[t.id].N++; if(code==='S')stats[t.id].S++; if(fest)stats[t.id].festivos++; if(isDom)stats[t.id].domingos++; if(isSab)stats[t.id].sabados++; }
+        if(code==='L') stats[t.id].L++;
+        if(tn.ausencia) stats[t.id].ausencias++;
+      });
+    });
+  }
+  // findes por bloque (atribuir al mes natural del sábado)
+  for(let mn=0;mn<12;mn++){
+    const diasMesNat = diasEntre(new Date(anyo,mn,1), new Date(anyo,mn+1,0));
+    const viernes = diasMesNat.filter(d=>d.getDay()===5);
+    viernes.forEach(v=>{
+      const sab=addDays(v,1), dom=addDays(v,2), lun=addDays(v,3);
+      if(sab.getDay()!==6||dom.getDay()!==0||lun.getDay()!==1) return;
+      const bloque={vie:fmt(v),sab:fmt(sab),dom:fmt(dom),lun:fmt(lun)};
+      // necesita un mes grid que contenga vie..lun
+      const info=mesQueContiene(bloque.sab); if(!info) return;
+      state.trabajadores.forEach(t=>{ if(trabajoEnFinde(info.mes,t,bloque)) stats[t.id].findes++; });
+    });
+  }
+  return stats;
+}
+function renderContadores(m, dias){
+  const stats = calcularStatsAnyo(curAnyo);
+  const cards = state.trabajadores.map(t=>{
+    const s=stats[t.id]||{};
+    const horasObj = t.jornada.horasAnualesObjetivo || 1792;
+    const saldo = (s.horas||0) - horasObj*monthOfYearProgress(curAnyo);
+    const saldoCls = Math.abs(saldo) <= state.config.toleranciaSaldoAnual ? 'ok':'bad';
+    return `<div class="c-card"><div class="c-name">${escaparHTML(t.nombreCompleto||'')}</div><div class="c-rol">${escaparHTML(t.rol||'')}</div>
+      <div class="c-stats">
+        <div class="stat h ${saldoCls}"><span class="v">${(s.horas||0).toFixed(0)}h</span><span class="l">Horas</span></div>
+        <div class="stat w"><span class="v">${s.findes||0}</span><span class="l">Findes</span></div>
+        <div class="stat n"><span class="v">${s.N||0}</span><span class="l">Noches</span></div>
+        <div class="stat tg"><span class="v">${s.T||0}</span><span class="l">Tardes</span></div>
+        <div class="stat g"><span class="v">${s.M||0}</span><span class="l">Mañanas</span></div>
+        <div class="stat f"><span class="v">${s.festivos||0}</span><span class="l">Festivos</span></div>
+        <div class="stat"><span class="v">${s.sabados||0}</span><span class="l">Sáb</span></div>
+        <div class="stat"><span class="v">${s.domingos||0}</span><span class="l">Dom</span></div>
+      </div></div>`;
+  }).join('');
+  return `<div class="section-title">Contadores anuales ${curAnyo} <span style="font-weight:400;color:var(--muted);font-size:12px;">(atribución por mes natural · acumulado de meses definidos)</span><span class="line"></span></div>
+    <div class="counters">${cards}</div>`;
+}
+function monthOfYearProgress(anyo){
+  const a=state.cuadrantes[anyo]; if(!a) return 0;
+  let defined=0; for(let i=0;i<12;i++){ if(a.meses[i]&&a.meses[i].inicio&&a.meses[i].fin) defined++; }
+  return defined/12;
+}
+
+/* ============ POPOVER TURNOS (Fase 1) ============ */
+let curCell=null;
+function openSvPop(ev, tid, fecha){
+  ev.stopPropagation(); closeSvPop();
+  const pop = document.getElementById('sv-pop');
+  const t = state.trabajadores.find(x=>x.id===tid);
+  const m = getMes(curAnyo, curMesIdx);
+  const curAsig = getAsig(m, tid, fecha);
+  const turnosVisibles = state.tiposTurno.filter(tt=> tt.manual!==false).sort((a,b)=>(a.orden||99)-(b.orden||99));
+  let html = `<div class="pop-head"><b>${escaparHTML(t?t.nombreCompleto:'')}</b><br>${fecha} (${DIAS_LET[parse(fecha).getDay()]})</div>`;
+  html += `<div class="sv-opt clear" onclick="setCell('${tid}','${fecha}','')">🗑 Quitar</div>`;
+  html += turnosVisibles.map(tt=>{
+    const txt=textColorSobre(tt.color);
+    return `<div class="sv-opt" onclick="setCell('${tid}','${fecha}','${tt.code}')">
+      <span class="dot" style="background:${tt.color};"></span>
+      <b style="color:${txt};background:${tt.color};padding:1px 4px;border-radius:3px;">${escaparHTML(tt.code)}</b>
+      <span style="font-size:11px;">${escaparHTML(tt.nombre)}</span></div>`;
+  }).join('');
+  // acciones: bloquear, nota
+  const bl = curAsig && curAsig.bloqueado;
+  html += `<div class="pop-act">
+    <button onclick="toggleBloqueo('${tid}','${fecha}')">${bl?'🔓 Desbloquear':'🔒 Bloquear'}</button>
+    <button onclick="editarNota('${tid}','${fecha}')">📝 Nota</button>
+  </div>`;
+  pop.innerHTML = html; document.body.appendChild(pop);
+  const r = ev.target.getBoundingClientRect();
+  pop.style.left = Math.min(r.left, window.innerWidth-200)+'px';
+  pop.style.top = (r.bottom + window.scrollY + 4)+'px';
+  pop.classList.add('show');
+  curCell={tid,fecha};
+}
+function setCell(tid, fecha, code){
+  const m = getMes(curAnyo, curMesIdx);
+  const prev = getAsig(m, tid, fecha);
+  if(prev && prev.bloqueado){
+    if(!confirm('Esta celda está bloqueada. ¿Asignar de todos modos?')){ closeSvPop(); return; }
+  }
+  if(code){
+    // si es N, aplicar secuencia N→S→L
+    if(code==='N' && state.config.secuenciaNocheObligatoria){
+      setAsig(m, tid, fecha, 'N', {origen:ORIGEN_MANUAL, bloqueado:false});
+      aplicarSecuenciaNoche(curAnyo, curMesIdx, tid, fecha);
+    } else if(code==='N'){
+      setAsig(m, tid, fecha, 'N', {origen:ORIGEN_MANUAL, bloqueado:false});
+    } else {
+      setAsig(m, tid, fecha, code, {origen:ORIGEN_MANUAL, bloqueado:false});
+    }
+  } else {
+    // al borrar una N, limpiar S/L derivadas
+    if(prev && prev.turno==='N'){ limpiarSecuenciaNoche(curAnyo, curMesIdx, tid, fecha); }
+    delAsig(m, tid, fecha);
+  }
+  save(state); closeSvPop();
+  // render de la celda + celdas adyacentes (por si cambió S/L)
+  renderCelda(tid, fecha);
+  const d=parse(fecha);
+  ['S','L'].forEach((c,off)=>{ const fd=fmt(addDays(d,off+1)); renderCelda(tid, fd); });
+}
+function toggleBloqueo(tid, fecha){
+  const m = getMes(curAnyo, curMesIdx);
+  const a = getAsig(m, tid, fecha);
+  if(!a){ alert('No hay asignación que bloquear.'); return; }
+  a.bloqueado = !a.bloqueado; a.actualizadoEn=nowISO();
+  save(state); closeSvPop(); renderCelda(tid, fecha);
+}
+function editarNota(tid, fecha){
+  const m = getMes(curAnyo, curMesIdx);
+  const a = getAsig(m, tid, fecha);
+  const cur = a ? (a.nota||'') : '';
+  const html = `<h3>📝 Nota de celda</h3>
+    <p class="hint" style="margin-bottom:8px;">${escaparHTML(fecha)}</p>
+    <div class="row"><textarea id="nota-txt" placeholder="Ej: cambio puntual, observación...">${escaparHTML(cur)}</textarea></div>
+    <div class="actions"><button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="guardarNota('${tid}','${fecha}', ${a? 'true':'false'})">Guardar</button></div>`;
+  openModal(html);
+}
+function guardarNota(tid, fecha, existia){
+  const txt = document.getElementById('nota-txt').value;
+  const m = getMes(curAnyo, curMesIdx);
+  if(!existia && txt){ setAsig(m, tid, fecha, 'L', {origen:ORIGEN_MANUAL, nota:txt}); } // nota sin turno -> marca L
+  else if(existia){ const a=getAsig(m,tid,fecha); if(a){ a.nota=txt; a.actualizadoEn=nowISO(); } }
+  save(state); closeModal(); renderCelda(tid, fecha);
+}
+function closeSvPop(){ document.getElementById('sv-pop').classList.remove('show'); }
+document.addEventListener('click', e=>{ if(!e.target.closest('.sv-pop')&&!e.target.closest('button')&&!e.target.closest('.modal')) closeSvPop(); });
+
+/* ============ EDITOR DE DÍA (notas generales + festivo) (Fase 1) ============ */
+function editarDia(fechaStr){
+  const m = getMes(curAnyo, curMesIdx);
+  const fest = state.festivos.find(f=>f.fecha===fechaStr);
+  const nota = (m.notasDia && m.notasDia[fechaStr]) || '';
+  const dias = diasEntre(parse(m.inicio), parse(m.fin));
+  let opts = dias.map(d=>`<option value="${fmt(d)}" ${fmt(d)===fechaStr?'selected':''}>${fmt(d)} (${DIAS_LET[d.getDay()]})</option>`).join('');
+  const html = `<h3>📌 Día ${escaparHTML(fechaStr)}${fest?` — ${escaparHTML(fest.nombre)}`:''}</h3>
+    <div class="row"><label>Día</label><select id="pday" onchange="editarDiaRefresh()">${opts}</select></div>
+    <div class="row"><label class="sm">Nota general del día</label><input type="text" id="p-nota" value="${escaparAttr(nota)}" placeholder="Ej: turno extra, refuerzo..."></div>
+    <div style="border-top:1px solid var(--line); margin:12px 0; padding-top:12px;">
+      <div style="font-weight:600; font-size:13px; margin-bottom:8px;">🎉 Festivo</div>
+      <div class="row"><label class="sm">Es festivo</label><label class="chk-pill"><input type="checkbox" id="p-fest" ${fest?'checked':''} onchange="document.getElementById('p-fest-fields').style.display=this.checked?'block':'none'"> Marcar</label></div>
+      <div id="p-fest-fields" style="display:${fest?'block':'none'};">
+        <div class="row"><label class="sm">Nombre</label><input type="text" id="p-fest-nombre" value="${escaparAttr(fest?fest.nombre:'')}"></div>
+        <div class="row"><label class="sm">Tipo</label><select id="p-fest-tipo">
+          <option value="nacional" ${fest&&fest.tipo==='nacional'?'selected':''}>Nacional</option>
+          <option value="autonomico" ${fest&&fest.tipo==='autonomico'?'selected':''}>Autonómico</option>
+          <option value="local" ${fest&&fest.tipo==='local'?'selected':''}>Local</option></select></div>
+      </div>
+    </div>
+    <div class="actions"><button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="applyEditarDia()">Aplicar</button></div>`;
+  openModal(html);
+}
+function editarDiaRefresh(){
+  const m=getMes(curAnyo,curMesIdx); const day=document.getElementById('pday').value;
+  const fest=state.festivos.find(f=>f.fecha===day);
+  document.getElementById('p-fest').checked=!!fest;
+  document.getElementById('p-fest-fields').style.display=fest?'block':'none';
+  document.getElementById('p-nota').value=(m.notasDia&&m.notasDia[day])||'';
+  if(fest){ document.getElementById('p-fest-nombre').value=fest.nombre; document.getElementById('p-fest-tipo').value=fest.tipo; }
+}
+function applyEditarDia(){
+  const m=getMes(curAnyo,curMesIdx); const day=document.getElementById('pday').value;
+  if(!m.notasDia) m.notasDia={};
+  m.notasDia[day]=document.getElementById('p-nota').value;
+  const isFest=document.getElementById('p-fest').checked;
+  state.festivos=state.festivos.filter(f=>f.fecha!==day);
+  if(isFest){ state.festivos.push({fecha:day, nombre:document.getElementById('p-fest-nombre').value||'Festivo', tipo:document.getElementById('p-fest-tipo').value}); state.festivos.sort((a,b)=>a.fecha.localeCompare(b.fecha)); }
+  save(state); closeModal(); renderMes();
+}
+
+/* ============ AUSENCIAS POR RANGO (Fase 2) ============ */
+function proyectarAusenciasEnMes(m){
+  if(!m.inicio||!m.fin||!state.ausencias) return;
+  diasEntre(parse(m.inicio),parse(m.fin)).forEach(d=>{
+    const ds=fmt(d);
+    state.ausencias.forEach(aus=>{
+      if(ds>=aus.inicio && ds<=aus.fin){
+        // no sobreescribir celdas manuales bloqueadas
+        const cur = getAsig(m, aus.trabajadorId, ds);
+        if(cur && cur.origen===ORIGEN_MANUAL && cur.bloqueado) return;
+        setAsig(m, aus.trabajadorId, ds, aus.tipo, {origen:ORIGEN_AUSENCIA, bloqueado: aus.bloqueada!==false});
+      }
+    });
+  });
+}
+function proyectarTodasAusencias(){
+  Object.keys(state.cuadrantes).forEach(y=>{
+    const a=state.cuadrantes[y];
+    for(let i=0;i<12;i++){ if(a.meses[i]&&a.meses[i].inicio) proyectarAusenciasEnMes(a.meses[i]); }
+  });
+}
+function openAusencias(){
+  const html = `<h3>📑 Ausencias por rango</h3>
+    <p class="hint">Vacaciones, bajas y permisos por rango de fechas. Se proyectan automáticamente sobre todos los meses definidos y bloquean esas celdas.</p>
+    <div class="list-edit" id="le-aus">
+      ${state.ausencias.map(a=>{
+        const t=state.trabajadores.find(x=>x.id===a.trabajadorId);
+        return `<div class="list-item">
+          <span style="flex:1;"><b>${escaparHTML(t?t.nombreCompleto:'(eliminado)')}</b> — <b>${escaparHTML(a.tipo)}</b> · ${a.inicio} → ${a.fin}${a.motivo?` · ${escaparHTML(a.motivo)}`:''}</span>
+          <button class="btn sm" onclick="editAusencia('${a.id}')">Editar</button>
+          <button class="btn sm danger" onclick="delAusencia('${a.id}')">🗑</button>
+        </div>`;
+      }).join('') || '<p class="hint">No hay ausencias registradas.</p>'}
+    </div>
+    <button class="btn sm" onclick="addAusencia()">+ Añadir ausencia</button>
+    <div class="actions"><button class="btn primary" onclick="closeModal();renderMes()">Cerrar</button></div>`;
+  openModal(html, true);
+}
+function addAusencia(){ editAusencia(null); }
+function editAusencia(id){
+  const a = id ? state.ausencias.find(x=>x.id===id) : {trabajadorId:state.trabajadores[0]?.id, tipo:'VAC', inicio:'', fin:'', motivo:''};
+  const optsT = state.trabajadores.map(t=>`<option value="${t.id}" ${a.trabajadorId===t.id?'selected':''}>${escaparHTML(t.nombreCompleto)}</option>`).join('');
+  const optsTipo = ['VAC','BAJ','PER'].concat(state.tiposTurno.filter(t=>t.ausencia && !['VAC','BAJ','PER'].includes(t.code)).map(t=>t.code))
+    .filter((v,i,arr)=>arr.indexOf(v)===i).map(c=>`<option value="${c}" ${a.tipo===c?'selected':''}>${escaparHTML(c)} — ${escaparHTML((turnoPorCode(c)||{}).nombre||'')}</option>`).join('');
+  const html = `<h3>${id?'Editar':'Nueva'} ausencia</h3>
+    <div class="row"><label class="sm">Trabajador</label><select id="au-t">${optsT}</select></div>
+    <div class="row"><label class="sm">Tipo</label><select id="au-tipo">${optsTipo}</select></div>
+    <div class="row"><label class="sm">Inicio</label><input type="date" id="au-ini" value="${a.inicio||''}"></div>
+    <div class="row"><label class="sm">Fin</label><input type="date" id="au-fin" value="${a.fin||''}"></div>
+    <div class="row"><label class="sm">Motivo</label><input type="text" id="au-mot" value="${escaparAttr(a.motivo||'')}"></div>
+    <div class="row"><label class="sm">Bloqueada</label><label class="chk-pill on"><input type="checkbox" id="au-bl" ${a.bloqueada!==false?'checked':''}> Sí (no la toca el Automático)</label></div>
+    <div class="actions"><button class="btn" onclick="closeModal();openAusencias()">Cancelar</button>
+      <button class="btn primary" onclick="saveAusencia('${id||''}')">Guardar</button></div>`;
+  openModal(html);
+}
+function saveAusencia(id){
+  const tId=document.getElementById('au-t').value;
+  const tipo=document.getElementById('au-tipo').value;
+  const ini=document.getElementById('au-ini').value, fin=document.getElementById('au-fin').value;
+  if(!ini||!fin){ alert('Indica inicio y fin.'); return false; }
+  if(parse(fin)<parse(ini)){ alert('La fecha fin debe ser posterior o igual a la inicio.'); return false; }
+  const mot=document.getElementById('au-mot').value;
+  const bl=document.getElementById('au-bl').checked;
+  // limpiar proyección previa si edición
+  if(id){
+    const old=state.ausencias.find(x=>x.id===id);
+    if(old) limpiarAusencia(old);
+    old.trabajadorId=tId; old.tipo=tipo; old.inicio=ini; old.fin=fin; old.motivo=mot; old.bloqueada=bl;
+  } else {
+    state.ausencias.push({id:uid('aus'), trabajadorId:tId, tipo, inicio:ini, fin:fin, motivo:mot, bloqueada:bl});
+  }
+  proyectarTodasAusencias(); save(state);
+  closeModal(); openAusencias();
+}
+function limpiarAusencia(a){
+  // borra celdas origen:ausencia dentro del rango para ese trabajador
+  diasEntre(parse(a.inicio),parse(a.fin)).forEach(d=>{
+    const ds=fmt(d); const info=mesQueContiene(ds);
+    if(info){ const x=getAsig(info.mes, a.trabajadorId, ds); if(x && x.origen===ORIGEN_AUSENCIA && x.turno===a.tipo) delAsig(info.mes, a.trabajadorId, ds); }
+  });
+}
+function delAusencia(id){
+  if(!confirm('¿Eliminar esta ausencia? Se quitará de todos los cuadrantes.')) return;
+  const a=state.ausencias.find(x=>x.id===id); if(!a) return;
+  limpiarAusencia(a); state.ausencias=state.ausencias.filter(x=>x.id!==id);
+  save(state); openAusencias();
+}
+
+/* ============ SECUENCIA N → S → L (Fase 3) ============ */
+function aplicarSecuenciaNoche(anyo, idx, tid, fechaN){
+  const d = parse(fechaN);
+  const pasos = [['S',1],['L',2]];
+  pasos.forEach(([code, off])=>{
+    const fd = addDays(d, off); const ds = fmt(fd);
+    const info = mesQueContiene(ds);
+    if(info){
+      const cur = getAsig(info.mes, tid, ds);
+      if(cur && cur.origen===ORIGEN_MANUAL && cur.bloqueado) return; // no sobreescribir manual bloqueado
+      setAsig(info.mes, tid, ds, code, {origen:ORIGEN_REGLA, bloqueado:true});
+    } else {
+      // mes no definido: pendiente
+      state.descansosPendientes.push({tid, fecha:ds, code, origenAnyo:anyo});
+    }
+  });
+}
+function limpiarSecuenciaNoche(anyo, idx, tid, fechaN){
+  const d = parse(fechaN);
+  [['S',1],['L',2]].forEach(([code,off])=>{
+    const ds = fmt(addDays(d,off));
+    const info = mesQueContiene(ds);
+    if(info){
+      const cur = getAsig(info.mes, tid, ds);
+      if(cur && cur.origen===ORIGEN_REGLA && cur.turno===code) delAsig(info.mes, tid, ds);
+    }
+  });
+}
+function aplicarDescansosPendientesEnMes(m){
+  if(!m.inicio||!m.fin||!state.descansosPendientes||!state.descansosPendientes.length) return;
+  const aplicados=[];
+  state.descansosPendientes.forEach((lp,i)=>{
+    if(lp.fecha>=m.inicio && lp.fecha<=m.fin){
+      const cur = getAsig(m, lp.tid, lp.fecha);
+      if(!cur || !cur.bloqueado){ setAsig(m, lp.tid, lp.fecha, lp.code, {origen:ORIGEN_REGLA, bloqueado:true}); }
+      aplicados.push(i);
+    }
+  });
+  aplicados.sort((a,b)=>b-a).forEach(i=>state.descansosPendientes.splice(i,1));
+}
+
+/* ============ VALIDADOR INTEGRAL (Fase 4) ============ */
+// Devuelve {errores:[{tid,fecha,msg,tipo}], advertencias:[...]}
+function validarCuadrante(anyo, idx){
+  const m = state.cuadrantes[anyo] && state.cuadrantes[anyo].meses[idx];
+  const errores=[], advs=[];
+  if(!m || !m.inicio || !m.fin) return {errores:[{tid:'',fecha:'',msg:'Mes no definido',tipo:'estructura'}], advertencias:[]};
+  const dias = diasEntre(parse(m.inicio), parse(m.fin));
+  const cfg = state.config;
+  dias.forEach(d=>{
+    const ds=fmt(d); const tipo=tipoDiaDe(d);
+    state.trabajadores.forEach(t=>{
+      const a = getAsig(m, t.id, ds); if(!a) return;
+      const code=a.turno;
+      // inactivo asignado
+      if(!t.activo){ errores.push({tid:t.id, fecha:ds, msg:`${t.nombreCompleto} está inactivo pero tiene ${code}`, tipo:'inactivo'}); return; }
+      const tn = turnoPorCode(code); if(!tn) return;
+      const p=t.preferencias;
+      // turno no permitido
+      if(tn.trabajo && p.turnosPermitidos && !p.turnosPermitidos.includes(code)){
+        errores.push({tid:t.id, fecha:ds, msg:`${t.nombreCompleto}: turno ${code} no permitido`, tipo:'noPermitido'});
+      }
+      // turno fijo
+      if(p.soloTurnos && p.soloTurnosTipo && tn.trabajo && code!==p.soloTurnosTipo){
+        errores.push({tid:t.id, fecha:ds, msg:`${t.nombreCompleto}: solo puede hacer ${p.soloTurnosTipo}`, tipo:'fijo'});
+      }
+      // no trabaja noches
+      if(code==='N' && p.noTrabajaNoches){ errores.push({tid:t.id, fecha:ds, msg:`${t.nombreCompleto}: no trabaja noches`, tipo:'noNoches'}); }
+      // no findes
+      if((d.getDay()===0||d.getDay()===6) && p.noTrabajaFinesSemana && tn.trabajo){
+        errores.push({tid:t.id, fecha:ds, msg:`${t.nombreCompleto}: no trabaja fines de semana`, tipo:'noFindes'});
+      }
+      // día no disponible
+      if((p.diasNoDisponibles||[]).includes(ds) && tn.trabajo){
+        errores.push({tid:t.id, fecha:ds, msg:`${t.nombreCompleto}: día no disponible`, tipo:'noDisponible'});
+      }
+      // turno asignado durante ausencia (ausencia misma fecha)
+      const ausMisma = state.ausencias.find(au=> au.trabajadorId===t.id && ds>=au.inicio && ds<=au.fin);
+      if(ausMisma && tn.trabajo){
+        errores.push({tid:t.id, fecha:ds, msg:`${t.nombreCompleto}: trabaja durante ${ausMisma.tipo} (${ausMisma.inicio}→${ausMisma.fin})`, tipo:'duranteAusencia'});
+      }
+      // reglas entre días consecutivos
+      const codY = getCodigo(m, t.id, fmt(addDays(d,1)));
+      const codAyer = getCodigo(m, t.id, fmt(addDays(d,-1)));
+      // N seguida de M
+      if(code==='N' && codY && (codY==='M' || codY==='T') && !cfg.permitirIncompatibles){
+        errores.push({tid:t.id, fecha:ds, msg:`${t.nombreCompleto}: noche seguida de ${codY} al día siguiente`, tipo:'incompatible'});
+      }
+      // secuencia N->S->L
+      if(cfg.secuenciaNocheObligatoria && code==='N' && codY!=='S' && codY!==''){
+        errores.push({tid:t.id, fecha:ds, msg:`${t.nombreCompleto}: tras noche debería ir S (hay ${codY||'nada'})`, tipo:'secuenciaNSL'});
+      }
+      // max noches consecutivas
+      if(code==='N'){
+        let c=0, off=0; while(getCodigo(m,t.id,fmt(addDays(d,off)))==='N'){ c++; off++; }
+        if(c>cfg.maxNochesConsecutivas) errores.push({tid:t.id, fecha:ds, msg:`${t.nombreCompleto}: ${c} noches consecutivas (máx ${cfg.maxNochesConsecutivas})`, tipo:'maxNoches'});
+      }
+      // max días consecutivos
+      if(tn.trabajo){
+        const maxC = (p.maxDiasConsecutivos!=null?p.maxDiasConsecutivos:cfg.maxDiasConsecutivos);
+        let c=0, off=0;
+        while(true){ const cd=getCodigo(m,t.id,fmt(addDays(d,off))); if(cd&&turnoEsTrabajo(cd)){ c++; off++; } else break; }
+        if(c>maxC) errores.push({tid:t.id, fecha:ds, msg:`${t.nombreCompleto}: ${c} días consecutivos (máx ${maxC})`, tipo:'maxConsec'});
+      }
+    });
+  });
+  // cobertura mínima
+  dias.forEach(d=>{ const c=coberturaDia(m,d); c.alerts.forEach(al=> errores.push({tid:'', fecha:fmt(d), msg:`Cobertura: ${al}`, tipo:'cobertura'})); });
+  // saldos mensuales (advertencia)
+  const stats = calcularStatsMes(m, dias);
+  state.trabajadores.forEach(t=>{
+    const s=stats[t.id]; if(!s) return;
+    const obj = (t.jornada.horasMensualesObjetivo || (t.jornada.horasSemanalesObjetivo*4.33));
+    const saldo = s.horas - obj;
+    if(Math.abs(saldo) > cfg.toleranciaSaldoMensual){
+      advs.push({tid:t.id, fecha:'', msg:`${t.nombreCompleto}: saldo mensual ${saldo>0?'+':''}${saldo.toFixed(0)}h (tolerancia ±${cfg.toleranciaSaldoMensual}h)`, tipo:'saldoMes'});
+    }
+    if(cfg.avisoExcesoHorasMensual && s.horas > cfg.umbralExcesoHorasMensual){
+      advs.push({tid:t.id, fecha:'', msg:`${t.nombreCompleto}: ${s.horas.toFixed(0)}h este mes (umbral ${cfg.umbralExcesoHorasMensual}h)`, tipo:'excesoHoras'});
+    }
+  });
+  return {errores, advertencias:advs};
+}
+function renderAlertasPanel(){
+  const panel = document.getElementById('alertsPanel'); if(!panel) return;
+  const res = validarCuadrante(curAnyo, curMesIdx);
+  const errs = res.errores.length, warns = res.advertencias.length;
+  let head = `<div class="ap-head">
+    <h4>🔔 Alertas</h4>
+    ${errs?`<span class="badge err">${errs} err</span>`:''}
+    ${warns?`<span class="badge warn">${warns} aviso</span>`:''}
+    <span class="close" onclick="_vistaMes.panelAlertas=false;renderMes()">✕</span></div>`;
+  let body='';
+  if(!errs && !warns){ body = `<div class="ap-empty">✓ Sin incidencias. Cuadrante válido.</div>`; }
+  else {
+    body = res.errores.map(e=>`<div class="ap-item err" onclick="saltarA('${e.tid}','${e.fecha}')">
+      <span class="ai-msg">${escaparHTML(e.msg)}</span>${e.fecha?`<span class="ai-meta">${e.fecha}</span>`:''}</div>`).join('');
+    body += res.advertencias.map(e=>`<div class="ap-item warn" onclick="saltarA('${e.tid}','${e.fecha}')">
+      <span class="ai-msg">${escaparHTML(e.msg)}</span></div>`).join('');
+  }
+  panel.innerHTML = head+body;
+}
+function saltarA(tid, fecha){
+  if(!fecha) return;
+  const td = document.querySelector(`table.cuad td.cell[data-tid="${cssEscape(tid)}"][data-fecha="${fecha}"]`);
+  if(td){ td.scrollIntoView({block:'center', inline:'center'}); td.classList.add('flash'); setTimeout(()=>td.classList.remove('flash'),1000); }
+}
+
+/* ============ GENERADOR (Fase 7) ============ */
+function snapshotMes(anyo, idx){
+  const m = state.cuadrantes[anyo] && state.cuadrantes[anyo].meses[idx];
+  if(!m) return {};
+  return JSON.parse(JSON.stringify(m.asignaciones||{}));
+}
+function restaurarSnapshot(anyo, idx, snap){
+  const m = getMes(anyo, idx);
+  m.asignaciones = JSON.parse(JSON.stringify(snap||{}));
+}
+// preasignación: ausencias, bloqueos manuales y turnos fijos ya están en asignaciones
+function generarConUI(){
+  const m = getMes(curAnyo, curMesIdx);
+  if(!m.inicio||!m.fin){ alert('Define primero el rango del mes.'); return; }
+  const html = `<h3>⚙ Generar planificación</h3>
+    <p class="hint">Se conservarán ausencias, celdas manuales bloqueadas y turnos fijos. Se proyectan ausencias y se aplica la secuencia N→S→L si está activada.</p>
+    <div class="row"><label class="sm">Semilla</label><input type="number" id="gen-seed" value="${Math.floor(Math.random()*1e9)}"></div>
+    <div class="row"><label class="sm">Fase de mejora local</label><label class="chk-pill on"><input type="checkbox" id="gen-local" checked> Activar intercambios para equilibrar</label></div>
+    <div class="actions"><button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="runGenerar()">Generar</button></div>`;
+  openModal(html);
+}
+function runGenerar(){
+  const seed = parseInt(document.getElementById('gen-seed').value)||1;
+  const local = document.getElementById('gen-local').checked;
+  closeModal();
+  generarAutomatico(seed, local);
+}
+function generarAutomatico(seed, mejoraLocal){
+  const anyo=curAnyo, idx=curMesIdx;
+  const m = getMes(anyo, idx);
+  const snap = snapshotMes(anyo, idx);
+  const cfg = state.config; const pesos = cfg.pesos||{};
+  const turnosTrabajo = state.tiposTurno.filter(t=>t.trabajo).sort((a,b)=>(a.orden||99)-(b.orden||99));
+  const dias = diasEntre(parse(m.inicio), parse(m.fin));
+  const rng = mulberry32(seed);
+
+  // Fase 0: proyectar ausencias y descansos pendientes
+  proyectarAusenciasEnMes(m);
+  aplicarDescansosPendientesEnMes(m);
+
+  // Limpiar asignaciones automáticas previas (no manuales, no ausencias, no regla)
+  dias.forEach(d=>{
+    const ds=fmt(d);
+    state.trabajadores.forEach(t=>{
+      const a=getAsig(m,t.id,ds);
+      if(a && (a.origen===ORIGEN_AUTO || (!a.bloqueado && a.origen!==ORIGEN_MANUAL && a.origen!==ORIGEN_AUSENCIA && a.origen!==ORIGEN_REGLA))){
+        delAsig(m,t.id,ds);
+      }
+    });
+  });
+
+  // Acumulado anual para equidad
+  const acum = initAcumStats(anyo);
+
+  // Fase 1: prioridad de necesidades. Ordenar días asc; dentro de cada día, Noche antes, Enfermería antes.
+  const ordenTurnos = (a,b)=> (a.code==='N'?0:1)-(b.code==='N'?0:1) || (a.orden-b.orden);
+  const turnosOrdenados = turnosTrabajo.slice().sort(ordenTurnos);
+
+  const noCubiertas=[];
+  dias.forEach(d=>{
+    const ds=fmt(d); const tipo=tipoDiaDe(d);
+    turnosOrdenados.forEach(tn=>{
+      const rolesOrd = [...new Set(state.coberturas.filter(c=>coberturaAplica(c.tipoDia,tipo)&&c.turno===tn.code).map(c=>c.rol))]
+        .sort((a,b)=> (a==='Enfermería'?0:1)-(b==='Enfermería'?0:1));
+      rolesOrd.forEach(rol=>{
+        const min = (state.coberturas.find(c=>coberturaAplica(c.tipoDia,tipo)&&c.turno===tn.code&&c.rol===rol)||{}).min||0;
+        let cubierto = state.trabajadores.filter(t=> t.rol===rol && getCodigo(m,t.id,ds)===tn.code).length;
+        for(; cubierto<min; cubierto++){
+          const cand = elegirCandidato(tn, rol, d, m, acum, cfg, pesos, rng);
+          if(!cand){ noCubiertas.push(`${ds} ${tn.code} ${rol} (min ${min})`); break; }
+          setAsig(m, cand.id, ds, tn.code, {origen:ORIGEN_AUTO, bloqueado:false});
+          actualizarAcum(acum, cand.id, tn.code, d);
+          if(tn.code==='N' && cfg.secuenciaNocheObligatoria) aplicarSecuenciaNoche(anyo, idx, cand.id, ds);
+        }
+      });
+    });
+    // descansos: asignar L a quien lleve muchos días seguidos sin descanso y no tenga turno
+    state.trabajadores.forEach(t=>{
+      if(!t.activo) return;
+      const ds2=fmt(d); if(getCodigo(m,t.id,ds2)) return;
+      const ult = ultimosDiasTrabajados(m, t.id, d);
+      const maxC = (t.preferencias.maxDiasConsecutivos!=null?t.preferencias.maxDiasConsecutivos:cfg.maxDiasConsecutivos);
+      if(ult>=maxC){ setAsig(m, t.id, ds2, 'L', {origen:ORIGEN_AUTO, bloqueado:false}); }
+    });
+  });
+
+  // Fase 2: mejora local por semana (intercambios)
+  if(mejoraLocal) mejoraLocalIntercambios(m, dias, acum, cfg, pesos);
+
+  // Historial con snapshot
+  state.historialGeneraciones.push({fecha:nowISO(), anyo, mes:idx, seed, snapshot:snap});
+  if(state.historialGeneraciones.length>10) state.historialGeneraciones.shift();
+  save(state);
+
+  const val = validarCuadrante(anyo, idx);
+  let msg = `Generación completada (semilla ${seed}).`;
+  if(noCubiertas.length) msg += `\n\nNo se pudo cubrir ${noCubiertas.length} necesidad(es):\n`+noCubiertas.slice(0,10).join('\n')+(noCubiertas.length>10?`\n...y ${noCubiertas.length-10} más`:'');
+  if(val.errores.length) msg += `\n\nQuedan ${val.errores.length} error(es) tras la generación. Revisa el panel de alertas.`;
+  alert(msg);
+  renderMes();
+}
+function initAcumStats(anyo){
+  const acum={}; state.trabajadores.forEach(t=> acum[t.id]={horas:0,M:0,T:0,N:0,findes:0,domingos:0,festivos:0,total:0});
+  const a=state.cuadrantes[anyo]; if(!a) return acum;
+  for(let i=0;i<12;i++){
+    const m=a.meses[i]; if(!m||!m.inicio||!m.fin) continue;
+    const ds=diasEntre(parse(m.inicio),parse(m.fin));
+    const bloques=bloquesFindes(m);
+    ds.forEach(d=>{
+      const dateStr=fmt(d); const fest=state.festivos.find(f=>f.fecha===dateStr); const isDom=d.getDay()===0;
+      state.trabajadores.forEach(t=>{
+        const code=getCodigo(m,t.id,dateStr); if(!code) return;
+        const tn=turnoPorCode(code); if(!tn) return;
+        if(tn.trabajo){ acum[t.id].horas+=(tn.horas||0); acum[t.id].total++; if(code==='M')acum[t.id].M++; if(code==='T')acum[t.id].T++; if(code==='N')acum[t.id].N++; if(fest)acum[t.id].festivos++; if(isDom)acum[t.id].domingos++; }
+      });
+    });
+    bloques.forEach(b=> state.trabajadores.forEach(t=>{ if(trabajoEnFinde(m,t,b)) acum[t.id].findes++; }));
+  }
+  return acum;
+}
+function elegirCandidato(tn, rol, d, m, acum, cfg, pesos, rng){
+  const ds=fmt(d); const esFinde=(d.getDay()===0||d.getDay()===6);
+  const fest=state.festivos.find(f=>f.fecha===ds);
+  let cand = state.trabajadores.filter(t=>{
+    if(!t.activo) return false; if(t.rol!==rol) return false;
+    const a=getAsig(m,t.id,ds); if(a) return false;
+    const p=t.preferencias;
+    if(!p.turnosPermitidos.includes(tn.code)) return false;
+    if(p.soloTurnos && p.soloTurnosTipo && p.soloTurnosTipo!==tn.code) return false;
+    if(tn.code==='N' && p.noTrabajaNoches) return false;
+    if(esFinde && p.noTrabajaFinesSemana) return false;
+    if((p.diasNoDisponibles||[]).includes(ds)) return false;
+    if(!esLegalAsignar(t, tn.code, d, m, cfg)) return false;
+    return true;
+  });
+  if(!cand.length) return null;
+  cand.forEach(t=>{
+    const a=acum[t.id]||{};
+    const maxH=Math.max(1,...Object.values(acum).map(x=>x.horas));
+    const maxN=Math.max(1,...Object.values(acum).map(x=>x.N));
+    const maxT=Math.max(1,...Object.values(acum).map(x=>x.T));
+    const maxM=Math.max(1,...Object.values(acum).map(x=>x.M));
+    const maxF=Math.max(1,...Object.values(acum).map(x=>x.findes));
+    const maxD=Math.max(1,...Object.values(acum).map(x=>x.domingos));
+    const maxFe=Math.max(1,...Object.values(acum).map(x=>x.festivos));
+    let score=0;
+    score += (pesos.horasTotales||0)*(1 - a.horas/maxH);
+    if(tn.code==='N') score += (pesos.noches||0)*(1 - a.N/maxN);
+    if(tn.code==='T') score += (pesos.tardes||0)*(1 - a.T/maxT);
+    if(tn.code==='M') score += (pesos.mananas||0)*(1 - a.M/maxM);
+    if(esFinde) score += (pesos.finesSemana||0)*(1 - a.findes/maxF);
+    if(d.getDay()===0) score += (pesos.domingos||0)*(1 - a.domingos/maxD);
+    if(fest) score += (pesos.festivos||0)*(1 - a.festivos/maxFe);
+    if(pesos.evitarRepetirTurno){ const ayer=getCodigo(m,t.id,fmt(addDays(d,-1))); if(ayer===tn.code) score -= pesos.evitarRepetirTurno*0.5; }
+    score += rng()*0.5;
+    t._score=score;
+  });
+  cand.sort((a,b)=>b._score-a._score);
+  return cand[0];
+}
+function esLegalAsignar(t, code, d, m, cfg){
+  const cod=(off)=>{ const info=mesQueContiene(fmt(addDays(d,off))); return info?getCodigo(info.mes,t.id,fmt(addDays(d,off))):''; };
+  const codMes=(off)=>getCodigo(m,t.id,fmt(addDays(d,off)));
+  const maxC=(t.preferencias.maxDiasConsecutivos!=null?t.preferencias.maxDiasConsecutivos:cfg.maxDiasConsecutivos);
+  if(maxC){ let c=0, off=-1; while(true){ const cd=codMes(off); if(cd&&turnoEsTrabajo(cd)){ c++; off--; } else break; } if(c>=maxC) return false; }
+  if(code==='M' && !cfg.permitirMananaTrasTarde && codMes(-1)==='T') return false;
+  if(code==='N'){ let c=0, off=-1; while(codMes(off)==='N'){ c++; off--; } if(c>=cfg.maxNochesConsecutivas) return false; }
+  if(!cfg.permitirIncompatibles){ if((code==='M'||code==='T') && cod(-1)==='N') return false; }
+  if(cfg.secuenciaNocheObligatoria && code!=='N' && cod(-1)==='N' && code!=='S') return false;
+  return true;
+}
+function ultimosDiasTrabajados(m, tid, d){
+  let c=0, off=-1;
+  while(true){ const cd=getCodigo(m,tid,fmt(addDays(d,off))); if(cd&&turnoEsTrabajo(cd)){ c++; off--; } else break; }
+  return c;
+}
+function actualizarAcum(acum, tid, code, d){
+  const a=acum[tid]; if(!a) return; const tn=turnoPorCode(code); if(!tn) return;
+  a.horas+=(tn.horas||0); a.total++; if(code==='M')a.M++; if(code==='T')a.T++; if(code==='N')a.N++;
+  const ds=fmt(d); const fest=state.festivos.find(f=>f.fecha===ds);
+  if(fest)a.festivos++; if(d.getDay()===0)a.domingos++; if(d.getDay()===0||d.getDay()===6)a.findes++;
+}
+// Mejora local: por semana, intentar intercambiar turnos entre compatibles si reduce desigualdad
+function mejoraLocalIntercambios(m, dias, acum, cfg, pesos){
+  // agrupar días en semanas (lun-dom) dentro del rango
+  const lunes=dias.filter(d=>d.getDay()===1);
+  lunes.forEach(l=>{
+    const semana=diasEntre(l, addDays(l,6)).filter(dd=> dias.some(x=>fmt(x)===fmt(dd)));
+    semana.forEach(d=>{
+      const ds=fmt(d);
+      // por cada par de trabajadores con turnos equivalentes (M<->M, T<->T), ver si intercambio mejora equidad de horas
+      const activos = state.trabajadores.filter(t=>t.activo);
+      for(let i=0;i<activos.length;i++){
+        for(let j=i+1;j<activos.length;j++){
+          const a=activos[i], b=activos[j];
+          const ca=getCodigo(m,a.id,ds), cb=getCodigo(m,b.id,ds);
+          if(!ca||!cb) continue;
+          if(ca!==cb) continue; // solo mismo turno
+          const ai=getAsig(m,a.id,ds), bj=getAsig(m,b.id,ds);
+          if((ai&&ai.origen!==ORIGEN_AUTO)||(bj&&bj.origen!==ORIGEN_AUTO)) continue;
+          if((ai&&ai.bloqueado)||(bj&&bj.bloqueado)) continue;
+          // no mejora nada si son iguales; skip
+        }
+      }
+    });
+  });
+  // (mejora local intencionalmente conservadora: no rompe cobertura)
+}
+function deshacerGeneracion(){
+  const h = state.historialGeneraciones[state.historialGeneraciones.length-1];
+  if(!h || h.anyo!==curAnyo || h.mes!==curMesIdx){ alert('No hay generación reciente para este mes.'); return; }
+  if(!confirm('¿Deshacer la última generación y restaurar el estado previo de este mes?')) return;
+  restaurarSnapshot(h.anyo, h.mes, h.snapshot);
+  state.historialGeneraciones.pop();
+  save(state); renderMes();
+  alert('Generación deshecha.');
+}
+// Normaliza un mapa de asignaciones ignorando el timestamp para comparar de forma estable
+function normalizarAsignaciones(asig){
+  const out={};
+  Object.keys(asig||{}).forEach(k=>{ const a=asig[k]; if(a&&typeof a==='object') out[k]={turno:a.turno, origen:a.origen, bloqueado:!!a.bloqueado, nota:a.nota||''}; });
+  return out;
+}
+function compararVersiones(){
+  const h = state.historialGeneraciones[state.historialGeneraciones.length-1];
+  if(!h || h.anyo!==curAnyo || h.mes!==curMesIdx){ alert('No hay generación reciente para comparar.'); return; }
+  const m = getMes(curAnyo, curMesIdx);
+  const antes = normalizarAsignaciones(h.snapshot);
+  const ahora = normalizarAsignaciones(m.asignaciones);
+  const cambios=[];
+  Object.keys(ahora).forEach(k=>{ if(JSON.stringify(antes[k])!==JSON.stringify(ahora[k])){ cambios.push({k, antes: antes[k]||'(vacío)', ahora: ahora[k]}); } });
+  Object.keys(antes).forEach(k=>{ if(!ahora[k]) cambios.push({k, antes: antes[k], ahora:'(vacío)'}); });
+  if(!cambios.length){ alert('Sin cambios respecto a la última generación.'); return; }
+  const tName = id => { const t=state.trabajadores.find(x=>x.id===id); return t?t.nombreCompleto:id; };
+  const html=`<h3>🔍 Comparar versiones</h3>
+    <p class="hint">${cambios.length} celda(s) modificada(s) respecto al estado anterior a la última generación.</p>
+    <div style="max-height:50vh;overflow:auto;">
+    <table class="tbl"><thead><tr><th>Trabajador</th><th>Fecha</th><th>Antes</th><th>Ahora</th></tr></thead>
+    <tbody>${cambios.slice(0,300).map(c=>{ const [tid,fecha]=(c.k||'').split('_'); return `<tr><td style="text-align:left;">${escaparHTML(tName(tid))}</td><td>${escaparHTML(fecha)}</td><td>${escaparHTML(typeof c.antes==='object'?c.antes.turno||'(vacío)':c.antes)}</td><td>${escaparHTML(typeof c.ahora==='object'?c.ahora.turno||'(vacío)':c.ahora)}</td></tr>`; }).join('')}</tbody></table>
+    </div>
+    <div class="actions"><button class="btn primary" onclick="closeModal()">Cerrar</button></div>`;
+  openModal(html, true);
+}
+
+/* ============ LIMPIAR MES ============ */
+function clearMes(){
+  const checks = state.trabajadores.map(t=>`<label class="chk-pill on"><input type="checkbox" class="clr-chk" value="${t.id}" checked> ${escaparHTML(t.nombreCompleto)}</label>`).join(' ');
+  const html = `<h3>🧹 Limpiar mes</h3>
+    <p class="hint">Marca los trabajadores cuyas asignaciones quieres <b>borrar</b>. Se conservan ausencias, celdas bloqueadas manualmente y reglas N→S→L.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:12px 0;">${checks}</div>
+    <div class="row"><label class="sm">Incluir bloqueadas</label><label class="chk-pill"><input type="checkbox" id="clr-bl"> Borrar también celdas bloqueadas</label></div>
+    <div class="actions">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn danger" onclick="selectAllClear(false)">Ninguno</button>
+      <button class="btn" onclick="selectAllClear(true)">Todos</button>
+      <button class="btn primary" onclick="doClearMes()">Limpiar</button></div>`;
+  openModal(html);
+}
+function selectAllClear(on){ document.querySelectorAll('.clr-chk').forEach(ch=>ch.checked=on); }
+function doClearMes(){
+  const m=getMes(curAnyo,curMesIdx);
+  const sel=[...document.querySelectorAll('.clr-chk:checked')].map(ch=>ch.value);
+  if(!sel.length){ alert('Selecciona al menos un trabajador.'); return; }
+  const incBl=document.getElementById('clr-bl').checked;
+  diasEntre(parse(m.inicio),parse(m.fin)).forEach(d=>{
+    const ds=fmt(d); sel.forEach(tid=>{
+      const a=getAsig(m,tid,ds); if(!a) return;
+      if(!incBl){
+        if(turnoBloqueaAuto(a.turno)) return;
+        if(a.bloqueado) return;
+      }
+      delAsig(m,tid,ds);
+    });
+  });
+  save(state); closeModal(); renderMes();
+}
+
+/* ============ MODAL HELPER ============ */
+function openModal(html, wide, xwide){
+  document.getElementById('modal').classList.toggle('wide', !!wide);
+  document.getElementById('modal').classList.toggle('xwide', !!xwide);
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('overlay').classList.add('show');
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('show'); }
+document.getElementById('overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') closeModal(); });
+function promptBox(title, fields, onOk){
+  let html = `<h3>${title}</h3><form id="pb">`;
+  fields.forEach(f=>{ html += `<div class="row"><label>${f.label}</label><input type="${f.type}" name="${f.name}" value="${escaparAttr(f.value||'')}" ${f.placeholder?`placeholder="${escaparAttr(f.placeholder)}"`:''} ${f.min!==undefined?`min="${f.min}"`:''}></div>`; });
+  html += `<div class="actions"><button type="button" class="btn" onclick="closeModal()">Cancelar</button><button type="submit" class="btn primary">Aceptar</button></div></form>`;
+  openModal(html);
+  document.getElementById('pb').addEventListener('submit',e=>{ e.preventDefault(); const fd=new FormData(e.target); const vals={}; fields.forEach(f=>vals[f.name]=fd.get(f.name)); const res=onOk(vals); if(res!==false) closeModal(); });
+}
+
+/* ============ EDITORES (Centro, Trabajadores, Turnos, Coberturas, Festivos, Config, Plantillas) ============ */
+function openCentro(){
+  const c=state.centro;
+  const html=`<h3>🏥 Datos del centro</h3>
+    <div class="row"><label>Nombre</label><input type="text" id="ce-nombre" value="${escaparAttr(c.nombre||'')}"></div>
+    <div class="row"><label>Localidad</label><input type="text" id="ce-loc" value="${escaparAttr(c.localidad||'')}"></div>
+    <div class="row"><label>Comunidad autónoma</label><input type="text" id="ce-ca" value="${escaparAttr(c.comunidadAutonoma||'')}"></div>
+    <div class="row"><label>Año activo</label><input type="number" id="ce-anyo" value="${c.anyoActivo||2026}"></div>
+    <div class="row"><label>Modo de mes</label><select id="ce-modo">
+      <option value="natural" ${c.modoMes==='natural'?'selected':''}>Natural (día 1 → último día)</option>
+      <option value="operativo" ${c.modoMes==='operativo'?'selected':''}>Operativo (semanas completas lun→dom)</option></select></div>
+    <div class="actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveCentro()">Guardar</button></div>`;
+  openModal(html);
+}
+function saveCentro(){
+  state.centro.nombre=val('ce-nombre'); state.centro.localidad=val('ce-loc');
+  state.centro.comunidadAutonoma=val('ce-ca'); state.centro.anyoActivo=parseInt(val('ce-anyo'))||2026;
+  state.centro.modoMes=val('ce-modo');
+  if(!state.cuadrantes[state.centro.anyoActivo]){ state.cuadrantes[state.centro.anyoActivo]={meses:{}}; for(let i=0;i<12;i++) state.cuadrantes[state.centro.anyoActivo].meses[i]={inicio:null,fin:null,asignaciones:{},notasDia:{},idx:i}; }
+  save(state); closeModal(); renderAnios();
+}
+function val(id){ const e=document.getElementById(id); return e?e.value:''; }
+function num(id, def){ const e=document.getElementById(id); if(!e||e.value==='') return def; const n=parseFloat(e.value); return isNaN(n)?def:n; }
+
+/* Trabajadores */
+let _filtrosTrab={texto:'',rol:'',activo:'todos',orden:'apellidos'};
+function openTrabajadores(){
+  let lista=state.trabajadores.slice();
+  if(_filtrosTrab.rol) lista=lista.filter(t=>t.rol===_filtrosTrab.rol);
+  if(_filtrosTrab.activo==='si') lista=lista.filter(t=>t.activo);
+  if(_filtrosTrab.activo==='no') lista=lista.filter(t=>!t.activo);
+  if(_filtrosTrab.texto){ const q=_filtrosTrab.texto.toLowerCase(); lista=lista.filter(t=>(t.nombreCompleto||'').toLowerCase().includes(q)); }
+  if(_filtrosTrab.orden==='apellidos') lista.sort((a,b)=>(a.apellidos||'').localeCompare(b.apellidos||''));
+  if(_filtrosTrab.orden==='rol') lista.sort((a,b)=>(a.rol||'').localeCompare(b.rol||''));
+  const optsRol=[''].concat(state.roles).map(r=>`<option value="${escaparAttr(r)}" ${_filtrosTrab.rol===r?'selected':''}>${escaparHTML(r||'(todos los roles)')}</option>`).join('');
+  const html=`<h3>👥 Trabajadores <span style="font-weight:400;color:var(--muted);font-size:13px;">(${state.trabajadores.length})</span></h3>
+    <p class="hint">Gestión de personal de la residencia.</p>
+    <div class="filtros-bar">
+      <input type="text" placeholder="Buscar..." value="${escaparAttr(_filtrosTrab.texto)}" oninput="_filtrosTrab.texto=this.value;openTrabajadores();this.focus()">
+      <select onchange="_filtrosTrab.rol=this.value;openTrabajadores()">${optsRol}</select>
+      <select onchange="_filtrosTrab.activo=this.value;openTrabajadores()">
+        <option value="todos" ${_filtrosTrab.activo==='todos'?'selected':''}>Todos</option>
+        <option value="si" ${_filtrosTrab.activo==='si'?'selected':''}>Solo activos</option>
+        <option value="no" ${_filtrosTrab.activo==='no'?'selected':''}>Solo inactivos</option></select>
+      <select onchange="_filtrosTrab.orden=this.value;openTrabajadores()">
+        <option value="apellidos" ${_filtrosTrab.orden==='apellidos'?'selected':''}>Apellidos</option>
+        <option value="rol" ${_filtrosTrab.orden==='rol'?'selected':''}>Rol</option></select></div>
+    <div class="list-edit">${lista.map(t=>`<div class="list-item">
+      <input type="checkbox" ${t.activo?'checked':''} onchange="toggleActivoTrab('${t.id}',this.checked)" title="Activo">
+      <span style="flex:1;cursor:pointer;" onclick="editTrabajador('${t.id}')"><b>${escaparHTML(t.nombreCompleto)}</b> <span style="color:var(--accent);font-size:11px;">${escaparHTML(t.rol||'')}</span></span>
+      <button class="btn sm" onclick="editTrabajador('${t.id}')">Editar</button>
+      <button class="btn sm danger" onclick="delTrabajador('${t.id}')">🗑</button></div>`).join('')}</div>
+    <div class="actions"><button class="btn sm" onclick="addTrabajador()">+ Añadir</button><button class="btn primary" onclick="closeModal();renderMes()">Cerrar</button></div>`;
+  openModal(html, true);
+}
+function addTrabajador(){
+  const id=uid('t');
+  state.trabajadores.push({id,nombre:'Nuevo',apellidos:'Trabajador',nombreCompleto:'Trabajador, Nuevo',activo:true,rol:state.roles[0]||'TCAE',
+    jornada:{horasAnualesObjetivo:1792,horasMensualesObjetivo:null,horasSemanalesObjetivo:40,porcentajeJornada:100},
+    preferencias:{turnosPermitidos:['M','T','N'],soloTurnos:false,soloTurnosTipo:'',noTrabajaNoches:false,noTrabajaFinesSemana:false,maxDiasConsecutivos:null,minDescansosTrasNoche:null,diasNoDisponibles:[],restriccionesSemanales:[]},
+    saldoInicialHoras:0,observaciones:''});
+  save(state); openTrabajadores();
+}
+function toggleActivoTrab(id,v){ const t=state.trabajadores.find(x=>x.id===id); if(t){t.activo=v;save(state);} }
+function delTrabajador(id){
+  if(!confirm('¿Eliminar este trabajador y todas sus asignaciones?')) return;
+  state.trabajadores=state.trabajadores.filter(t=>t.id!==id);
+  state.ausencias=state.ausencias.filter(a=>a.trabajadorId!==id);
+  Object.keys(state.cuadrantes).forEach(y=>{ const a=state.cuadrantes[y]; for(let i=0;i<12;i++){ const m=a.meses[i]; if(m&&m.asignaciones) Object.keys(m.asignaciones).forEach(k=>{ if(k.startsWith(id+'_')) delete m.asignaciones[k]; }); } });
+  save(state); openTrabajadores();
+}
+function editTrabajador(id){
+  const t=state.trabajadores.find(x=>x.id===id); if(!t) return;
+  const p=t.preferencias, j=t.jornada;
+  const optsRol=state.roles.map(r=>`<option value="${escaparAttr(r)}" ${t.rol===r?'selected':''}>${escaparHTML(r)}</option>`).join('');
+  const turnosPermitidos=state.tiposTurno.map(tt=>`<label class="chk-pill ${p.turnosPermitidos.includes(tt.code)?'on':''}"><input type="checkbox" class="tp-chk" value="${tt.code}" ${p.turnosPermitidos.includes(tt.code)?'checked':''}> ${escaparHTML(tt.code)}</label>`).join(' ');
+  const html=`<h3>✏️ Editar trabajador</h3>
+    <div class="row"><label>Nombre</label><input type="text" id="et-nombre" value="${escaparAttr(t.nombre||'')}"></div>
+    <div class="row"><label>Apellidos</label><input type="text" id="et-apellidos" value="${escaparAttr(t.apellidos||'')}"></div>
+    <div class="row"><label>Rol</label><select id="et-rol">${optsRol}</select></div>
+    <div class="row"><label>Activo</label><label class="chk-pill"><input type="checkbox" id="et-activo" ${t.activo?'checked':''}> Activo</label></div>
+    <div class="section-title" style="margin-top:14px;">Jornada<span class="line"></span></div>
+    <div class="row"><label class="sm">Horas anuales obj.</label><input type="number" id="et-ha" value="${j.horasAnualesObjetivo||''}" min="0"></div>
+    <div class="row"><label class="sm">Horas mensuales obj.</label><input type="number" id="et-hm" value="${j.horasMensualesObjetivo||''}" min="0"></div>
+    <div class="row"><label class="sm">Horas semanales obj.</label><input type="number" id="et-hs" value="${j.horasSemanalesObjetivo||''}" min="0"></div>
+    <div class="row"><label class="sm">% jornada</label><input type="number" id="et-pj" value="${j.porcentajeJornada||100}" min="1" max="100"></div>
+    <div class="row"><label class="sm">Saldo inicial (h)</label><input type="number" id="et-saldo" value="${t.saldoInicialHoras||0}"></div>
+    <div class="section-title" style="margin-top:14px;">Preferencias y restricciones<span class="line"></span></div>
+    <div style="margin-bottom:8px;"><label class="sm" style="display:block;margin-bottom:4px;">Turnos permitidos</label><div style="display:flex;flex-wrap:wrap;gap:6px;">${turnosPermitidos}</div></div>
+    <div class="row"><label class="sm">Solo turno fijo</label><select id="et-solot">
+      <option value="" ${!p.soloTurnos?'selected':''}>No</option>
+      ${state.tiposTurno.filter(tt=>tt.trabajo).map(tt=>`<option value="${tt.code}" ${p.soloTurnos&&p.soloTurnosTipo===tt.code?'selected':''}>Solo ${escaparHTML(tt.code)}</option>`).join('')}</select></div>
+    <div class="row"><label class="sm">No trabaja noches</label><label class="chk-pill"><input type="checkbox" id="et-nonoches" ${p.noTrabajaNoches?'checked':''}> Sin noches</label></div>
+    <div class="row"><label class="sm">No fines de semana</label><label class="chk-pill"><input type="checkbox" id="et-nofinde" ${p.noTrabajaFinesSemana?'checked':''}> Sin findes</label></div>
+    <div class="row"><label class="sm">Máx. días consecutivos</label><input type="number" id="et-maxc" value="${p.maxDiasConsecutivos||''}" min="0" placeholder="hereda global"></div>
+    <div class="row"><label class="sm">Descansos tras noche</label><input type="number" id="et-despnoche" value="${p.minDescansosTrasNoche||''}" min="0" placeholder="hereda global"></div>
+    <div class="row"><label class="sm">Días no disponibles</label><input type="text" id="et-nodisp" value="${escaparAttr((p.diasNoDisponibles||[]).join(', '))}" placeholder="YYYY-MM-DD, ..."></div>
+    <div class="row" style="align-items:flex-start;"><label class="sm">Observaciones</label><textarea id="et-obs">${escaparHTML(t.observaciones||'')}</textarea></div>
+    <div class="actions"><button class="btn" onclick="closeModal();openTrabajadores()">Cancelar</button><button class="btn primary" onclick="saveTrabajador('${id}')">Guardar</button></div>`;
+  openModal(html, true);
+}
+function saveTrabajador(id){
+  const t=state.trabajadores.find(x=>x.id===id); if(!t) return;
+  t.nombre=val('et-nombre'); t.apellidos=val('et-apellidos'); t.nombreCompleto=(t.apellidos||'')+', '+(t.nombre||'');
+  t.rol=val('et-rol'); t.activo=document.getElementById('et-activo').checked;
+  t.jornada.horasAnualesObjetivo=num('et-ha',null); t.jornada.horasMensualesObjetivo=num('et-hm',null);
+  t.jornada.horasSemanalesObjetivo=num('et-hs',null); t.jornada.porcentajeJornada=num('et-pj',100);
+  t.saldoInicialHoras=num('et-saldo',0);
+  t.preferencias.turnosPermitidos=[...document.querySelectorAll('.tp-chk:checked')].map(c=>c.value);
+  const soloT=val('et-solot'); t.preferencias.soloTurnos=!!soloT; t.preferencias.soloTurnosTipo=soloT||'';
+  t.preferencias.noTrabajaNoches=document.getElementById('et-nonoches').checked;
+  t.preferencias.noTrabajaFinesSemana=document.getElementById('et-nofinde').checked;
+  t.preferencias.maxDiasConsecutivos=num('et-maxc',null); t.preferencias.minDescansosTrasNoche=num('et-despnoche',null);
+  t.preferencias.diasNoDisponibles=(val('et-nodisp')||'').split(',').map(s=>s.trim()).filter(Boolean);
+  t.observaciones=val('et-obs');
+  save(state); closeModal(); openTrabajadores();
+}
+
+/* Turnos */
+function openTurnos(){
+  const turnos=state.tiposTurno.slice().sort((a,b)=>(a.orden||99)-(b.orden||99));
+  const turnosBase=turnos.filter(t=>['M','T','N'].includes(t.code));
+  const html=`<h3>⏰ Turnos / códigos</h3>
+    <p class="hint">Arrastra ⠿ para reordenar. Los básicos (${BASICOS.join(', ')}) no se eliminan. <b>cubreCobertura</b>: si cuenta para cobertura; <b>equivale a</b>: a qué turnos base equivale.</p>
+    <table class="tbl"><thead><tr><th></th><th>Color</th><th>Código</th><th>Nombre</th><th>Horas</th><th>Trabajo</th><th>Ausencia</th><th>Bloq.</th><th>Manual</th><th>Cubre</th><th>Equivale a</th><th></th></tr></thead>
+    <tbody id="le-sv">${turnos.map(t=>{
+      const deletable=!isTurnoBasico(t.code);
+      const equivOpts=turnosBase.map(tb=>`<label class="chk-pill ${(t.equivaleACobertura||[]).includes(tb.code)?'on':''}"><input type="checkbox" class="eq-chk" data-code="${t.code}" data-eq="${tb.code}" ${(t.equivaleACobertura||[]).includes(tb.code)?'checked':''}>${escaparHTML(tb.code)}</label>`).join(' ');
+      return `<tr class="drag-item" draggable="true" data-scode="${t.code}">
+        <td><span class="drag-handle">⠿</span></td>
+        <td><input type="color" class="swatch" value="${t.color}" onchange="updTurnoColor('${t.code}',this.value)"></td>
+        <td><input type="text" style="max-width:60px;text-transform:uppercase;font-weight:700;" value="${escaparAttr(t.code)}" onchange="updTurnoCode('${t.code}',this.value)" ${isTurnoBasico(t.code)?'readonly':''}></td>
+        <td><input type="text" value="${escaparAttr(t.nombre||'')}" onchange="updTurnoNombre('${t.code}',this.value)"></td>
+        <td><input type="number" style="max-width:50px;" value="${t.horas||0}" min="0" onchange="updTurnoHoras('${t.code}',this.value)"></td>
+        <td><input type="checkbox" ${t.trabajo?'checked':''} onchange="updTurnoFlag('${t.code}','trabajo',this.checked)"></td>
+        <td><input type="checkbox" ${t.ausencia?'checked':''} onchange="updTurnoFlag('${t.code}','ausencia',this.checked)"></td>
+        <td><input type="checkbox" ${t.bloqueaAuto?'checked':''} onchange="updTurnoFlag('${t.code}','bloqueaAuto',this.checked)"></td>
+        <td><input type="checkbox" ${t.manual!==false?'checked':''} onchange="updTurnoFlag('${t.code}','manual',this.checked)"></td>
+        <td><input type="checkbox" ${t.cubreCobertura?'checked':''} onchange="updTurnoFlag('${t.code}','cubreCobertura',this.checked)"></td>
+        <td style="text-align:left;">${equivOpts}</td>
+        <td>${deletable?`<button class="btn sm danger" onclick="delTurno('${t.code}')">🗑</button>`:`<span title="Básico">🔒</span>`}</td></tr>`;
+    }).join('')}</tbody></table>
+    <button class="btn sm" onclick="addTurno()">+ Añadir turno</button>
+    <div class="actions"><button class="btn primary" onclick="applyTurnos()">Aplicar</button></div>`;
+  openModal(html, true, true);
+  // bind equivale-a
+  document.querySelectorAll('.eq-chk').forEach(ch=> ch.addEventListener('change', e=>{
+    const code=e.target.dataset.code, eq=e.target.dataset.eq;
+    const t=turnoPorCode(code); if(!t){ return; }
+    if(!t.equivaleACobertura) t.equivaleACobertura=[];
+    if(e.target.checked){ if(!t.equivaleACobertura.includes(eq)) t.equivaleACobertura.push(eq); t.cubreCobertura=true; }
+    else t.equivaleACobertura=t.equivaleACobertura.filter(x=>x!==eq);
+    save(state);
+  }));
+  enableDragList('#le-sv','scode', arr=>{ arr.forEach((t,i)=>t.orden=i+1); state.tiposTurno=arr; save(state); openTurnos(); }, key=>state.tiposTurno.find(t=>t.code===key));
+}
+function applyTurnos(){ save(state); closeModal(); renderMes(); }
+function enableDragList(containerSel, dataAttr, onReorder, findByKey){
+  const container=document.querySelector(containerSel); if(!container) return;
+  const items=[...container.querySelectorAll('.drag-item')]; let dragKey=null;
+  items.forEach(el=>{
+    el.addEventListener('dragstart', e=>{ dragKey=el.dataset[dataAttr]; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
+    el.addEventListener('dragend', e=>{ el.classList.remove('dragging'); items.forEach(x=>x.classList.remove('drag-over')); });
+    el.addEventListener('dragover', e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; const after=_getDragAfter(containerSel,e.clientY); items.forEach(x=>x.classList.remove('drag-over')); if(after&&after.el) after.el.classList.add('drag-over'); });
+    el.addEventListener('drop', e=>{ e.preventDefault(); if(!dragKey) return;
+      const keysNow=[...container.querySelectorAll('.drag-item')].map(x=>x.dataset[dataAttr]); const from=keysNow.indexOf(dragKey); if(from<0) return;
+      const after=_getDragAfter(containerSel,e.clientY); const [moved]=keysNow.splice(from,1); let to=keysNow.length;
+      if(after&&after.before) to=after.idx; else if(after) to=after.idx; keysNow.splice(to,0,moved);
+      onReorder(keysNow.map(k=>findByKey(k)).filter(Boolean)); });
+  });
+}
+function _getDragAfter(containerSel,y){
+  const items=[...document.querySelectorAll(containerSel+' .drag-item:not(.dragging)')]; let closest=null,co=-Infinity;
+  items.forEach((el,i)=>{ const box=el.getBoundingClientRect(); const off=y-(box.top+box.height/2); if(off<0&&off>co){co=off;closest={el,idx:i,before:true};} });
+  if(!closest&&items.length) return {el:items[items.length-1],idx:items.length,before:false}; return closest;
+}
+function addTurno(){
+  const code='X'+(state.tiposTurno.length+1);
+  state.tiposTurno.push({code,nombre:'Nuevo',color:'#e5e7eb',horas:0,trabajo:false,ausencia:false,bloqueaAuto:false,manual:true,orden:state.tiposTurno.length+1,protected:false,cubreCobertura:false,equivaleACobertura:[]});
+  save(state); openTurnos();
+}
+function updTurnoColor(code,v){ const t=turnoPorCode(code); if(t){t.color=v;save(state);} }
+function updTurnoHoras(code,v){ const t=turnoPorCode(code); if(t){t.horas=parseFloat(v)||0;save(state);} }
+function updTurnoNombre(code,v){ const t=turnoPorCode(code); if(t){t.nombre=v;save(state);} }
+function updTurnoFlag(code,flag,on){ const t=turnoPorCode(code); if(t){t[flag]=on;save(state);} }
+function validarCodigoTurno(v){
+  v=(v||'').trim().toUpperCase();
+  if(!/^[A-Z0-9]{1,4}$/.test(v)) return {ok:false, msg:'Código inválido: 1-4 caracteres alfanuméricos (A-Z, 0-9).'};
+  return {ok:true, v};
+}
+function updTurnoCode(old,v){
+  const t=turnoPorCode(old); if(!t||isTurnoBasico(old)) return;
+  const r=validarCodigoTurno(v); if(!r.ok){ alert(r.msg); openTurnos(); return; }
+  if(r.v!==old && state.tiposTurno.some(x=>x.code===r.v)){ alert('Ya existe un turno con código '+r.v); openTurnos(); return; }
+  Object.keys(state.cuadrantes).forEach(y=>{ const a=state.cuadrantes[y]; for(let i=0;i<12;i++){ const m=a.meses[i]; if(m&&m.asignaciones) Object.keys(m.asignaciones).forEach(k=>{ const as=m.asignaciones[k]; if(as&&typeof as==='object'&&as.turno===old){ as.turno=r.v; as.actualizadoEn=nowISO(); } }); } });
+  t.code=r.v; save(state); openTurnos();
+}
+function delTurno(code){
+  if(isTurnoBasico(code)){ alert('Los turnos básicos no se pueden eliminar.'); return; }
+  // ¿está en uso?
+  let enUso=false;
+  Object.keys(state.cuadrantes).forEach(y=>{ const a=state.cuadrantes[y]; for(let i=0;i<12;i++){ const m=a.meses[i]; if(m&&m.asignaciones) Object.keys(m.asignaciones).forEach(k=>{ if(m.asignaciones[k]&&m.asignaciones[k].turno===code) enUso=true; }); } });
+  if(enUso){
+    if(!confirm(`El turno ${code} está en uso. ¿Reasignar sus celdas a Libre (L) antes de eliminar? (Cancelar aborta)`)) return;
+    Object.keys(state.cuadrantes).forEach(y=>{ const a=state.cuadrantes[y]; for(let i=0;i<12;i++){ const m=a.meses[i]; if(m&&m.asignaciones) Object.keys(m.asignaciones).forEach(k=>{ if(m.asignaciones[k]&&m.asignaciones[k].turno===code){ m.asignaciones[k].turno='L'; m.asignaciones[k].actualizadoEn=nowISO(); } }); } });
+  } else {
+    if(!confirm(`¿Eliminar el turno ${code}?`)) return;
+  }
+  state.tiposTurno=state.tiposTurno.filter(t=>t.code!==code);
+  save(state); openTurnos();
+}
+
+/* Coberturas */
+function openCoberturas(){
+  const tiposDia=['laborable','sabado','domingo','festivoLaborable','festivoSabado','festivoDomingo'];
+  const turnosTrabajo=state.tiposTurno.filter(t=>t.trabajo&&t.cubreCobertura).map(t=>t.code);
+  const html=`<h3>🎯 Coberturas mínimas</h3>
+    <p class="hint">Nº mínimo de trabajadores por tipo de día, turno y rol. festivoLaborable/Sabado/Domingo permiten cubrir festividades distintas.</p>
+    <table class="tbl"><thead><tr><th>Tipo día</th><th>Turno</th><th>Rol</th><th>Mínimo</th><th></th></tr></thead>
+    <tbody id="le-cob">${state.coberturas.map(c=>`<tr data-id="${c.id}">
+      <td><select onchange="updCob('${c.id}','tipoDia',this.value)">${tiposDia.map(td=>`<option value="${td}" ${c.tipoDia===td?'selected':''}>${escaparHTML(td)}</option>`).join('')}</select></td>
+      <td><select onchange="updCob('${c.id}','turno',this.value)">${turnosTrabajo.map(tc=>`<option value="${tc}" ${c.turno===tc?'selected':''}>${escaparHTML(tc)}</option>`).join('')}</select></td>
+      <td><select onchange="updCob('${c.id}','rol',this.value)">${state.roles.map(r=>`<option value="${escaparAttr(r)}" ${c.rol===r?'selected':''}>${escaparHTML(r)}</option>`).join('')}</select></td>
+      <td><input type="number" style="max-width:60px;" value="${c.min||0}" min="0" onchange="updCob('${c.id}','min',this.value)"></td>
+      <td><button class="btn sm danger" onclick="delCob('${c.id}')">🗑</button></td></tr>`).join('')}</tbody></table>
+    <button class="btn sm" onclick="addCob()">+ Añadir cobertura</button>
+    <div class="actions"><button class="btn primary" onclick="closeModal();renderMes()">Aplicar</button></div>`;
+  openModal(html, true, true);
+}
+function addCob(){ state.coberturas.push({id:uid('cob'),tipoDia:'laborable',turno:'M',rol:state.roles[0]||'TCAE',min:1}); save(state); openCoberturas(); }
+function updCob(id,field,v){ const c=state.coberturas.find(x=>x.id===id); if(!c) return; c[field]=field==='min'?(parseInt(v)||0):v; save(state); }
+function delCob(id){ state.coberturas=state.coberturas.filter(c=>c.id!==id); save(state); openCoberturas(); }
+
+/* Festivos */
+function openFestivos(){
+  const anyoFiltro=openFestivos._anyo||state.centro.anyoActivo;
+  const festivos=state.festivos.filter(f=>f.fecha.startsWith(String(anyoFiltro))).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const html=`<h3>🎉 Festivos</h3>
+    <p class="hint">Días festivos nacionales, autonómicos y locales.</p>
+    <div class="filtros-bar"><label class="sm">Año:</label>
+      <select onchange="openFestivos._anyo=parseInt(this.value);openFestivos()">${[-1,0,1,2].map(off=>{const y=state.centro.anyoActivo+off;return `<option value="${y}" ${y===anyoFiltro?'selected':''}>${y}</option>`;}).join('')}</select></div>
+    <div class="row"><label class="sm">Fecha</label><input type="date" id="ff-fecha"></div>
+    <div class="row"><label class="sm">Nombre</label><input type="text" id="ff-nombre" placeholder="Ej: Fiesta local"></div>
+    <div class="row"><label class="sm">Tipo</label><select id="ff-tipo"><option value="nacional">Nacional</option><option value="autonomico">Autonómico</option><option value="local">Local</option></select>
+      <button class="btn sm primary" onclick="addFestivo()">Añadir</button></div>
+    <div class="list-edit" style="margin-top:10px;">${festivos.map(f=>`<div class="list-item">
+      <span style="flex:1;"><b>${escaparHTML(f.fecha)}</b> (${DIAS_LET[parse(f.fecha).getDay()]}) — ${escaparHTML(f.nombre)} <span style="color:var(--muted);font-size:11px;">[${escaparHTML(f.tipo)}]</span></span>
+      <button class="btn sm" onclick="editFestivo('${f.fecha}')">Editar</button>
+      <button class="btn sm danger" onclick="delFestivo('${f.fecha}')">🗑</button></div>`).join('')}</div>
+    <div class="row"><button class="btn sm" onclick="cargarFestivosEspana(${anyoFiltro})">📥 Cargar nacionales ES ${anyoFiltro}</button></div>
+    <div class="actions"><button class="btn primary" onclick="closeModal();renderMes()">Aplicar</button></div>`;
+  openModal(html, true);
+}
+function addFestivo(){
+  const fecha=val('ff-fecha'), nombre=val('ff-nombre'), tipo=val('ff-tipo');
+  if(!fecha||!nombre){ alert('Indica fecha y nombre.'); return false; }
+  const idx=state.festivos.findIndex(f=>f.fecha===fecha);
+  if(idx>=0) state.festivos[idx]={fecha,nombre,tipo}; else state.festivos.push({fecha,nombre,tipo});
+  state.festivos.sort((a,b)=>a.fecha.localeCompare(b.fecha)); save(state); openFestivos();
+}
+function editFestivo(fecha){
+  const f=state.festivos.find(x=>x.fecha===fecha); if(!f) return;
+  const html=`<h3>Editar festivo</h3>
+    <div class="row"><label class="sm">Fecha</label><input type="date" id="ef-fecha" value="${f.fecha}"></div>
+    <div class="row"><label class="sm">Nombre</label><input type="text" id="ef-nombre" value="${escaparAttr(f.nombre||'')}"></div>
+    <div class="row"><label class="sm">Tipo</label><select id="ef-tipo"><option value="nacional" ${f.tipo==='nacional'?'selected':''}>Nacional</option><option value="autonomico" ${f.tipo==='autonomico'?'selected':''}>Autonómico</option><option value="local" ${f.tipo==='local'?'selected':''}>Local</option></select></div>
+    <div class="actions"><button class="btn" onclick="closeModal();openFestivos()">Cancelar</button><button class="btn primary" onclick="saveEditFestivo('${fecha}')">Guardar</button></div>`;
+  openModal(html);
+}
+function saveEditFestivo(old){
+  const fecha=val('ef-fecha'), nombre=val('ef-nombre'), tipo=val('ef-tipo');
+  state.festivos=state.festivos.filter(f=>f.fecha!==old); state.festivos.push({fecha,nombre,tipo});
+  state.festivos.sort((a,b)=>a.fecha.localeCompare(b.fecha)); save(state); closeModal(); openFestivos();
+}
+function delFestivo(fecha){ state.festivos=state.festivos.filter(x=>x.fecha!==fecha); save(state); openFestivos(); }
+function cargarFestivosEspana(anyo){
+  if(!confirm(`¿Añadir festivos nacionales de España ${anyo}?`)) return;
+  festivosEspanaAnyo(anyo).forEach(n=>{ if(!state.festivos.some(f=>f.fecha===n.fecha)) state.festivos.push(n); });
+  state.festivos.sort((a,b)=>a.fecha.localeCompare(b.fecha)); save(state); openFestivos();
+}
+
+/* Plantillas de rotación */
+function openPlantillas(){
+  const html=`<h3>🔁 Plantillas de rotación</h3>
+    <p class="hint">Secuencias reutilizables (ej: M-M-N-S-L-L). Aplica a una fila desde un día, repitiendo el ciclo.</p>
+    <div class="list-edit">${state.plantillas.map(p=>`<div class="list-item">
+      <input type="text" style="max-width:160px;" value="${escaparAttr(p.nombre)}" onchange="updPlantilla('${p.id}','nombre',this.value)">
+      <input type="text" value="${escaparAttr((p.secuencia||[]).join('-'))}" onchange="updPlantillaSeq('${p.id}',this.value)" placeholder="M-M-N-S-L-L">
+      <button class="btn sm danger" onclick="delPlantilla('${p.id}')">🗑</button></div>`).join('') || '<p class="hint">Sin plantillas.</p>'}</div>
+    <button class="btn sm" onclick="addPlantilla()">+ Crear plantilla</button>
+    <div class="actions"><button class="btn primary" onclick="closeModal()">Cerrar</button></div>`;
+  openModal(html);
+}
+function addPlantilla(){ state.plantillas.push({id:uid('plt'),nombre:'Plantilla '+(state.plantillas.length+1),secuencia:['M','M','M','L','L','T','T']}); save(state); openPlantillas(); }
+function updPlantilla(id,f,v){ const p=state.plantillas.find(x=>x.id===id); if(p){p[f]=v;save(state);} }
+function updPlantillaSeq(id,v){ const p=state.plantillas.find(x=>x.id===id); if(p){ p.secuencia=v.split('-').map(s=>s.trim().toUpperCase()).filter(Boolean); save(state);} }
+function delPlantilla(id){ state.plantillas=state.plantillas.filter(p=>p.id!==id); save(state); openPlantillas(); }
+
+/* Configuración */
+function openConfig(){
+  const c=state.config, p=c.pesos||{};
+  const html=`<h3>⚙️ Configuración</h3>
+    <div class="pec-card" style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;">
+      <div style="font-weight:700;margin-bottom:8px;border-bottom:2px solid var(--accent);padding-bottom:6px;">Jornada y descansos</div>
+      <div class="row"><label class="sm">Máx. días consecutivos</label><input type="number" id="cf-maxc" value="${c.maxDiasConsecutivos||6}" min="1"></div>
+      <div class="row"><label class="sm">Descansos mín. tras noche</label><input type="number" id="cf-despnoche" value="${c.minDescansosTrasNoche||1}" min="0"></div>
+      <div class="row"><label class="sm">Secuencia N→S→L obligatoria</label><label class="chk-pill"><input type="checkbox" id="cf-secuencia" ${c.secuenciaNocheObligatoria?'checked':''}> Activar</label></div>
+      <div class="row"><label class="sm">Turno S consume descanso</label><label class="chk-pill"><input type="checkbox" id="cf-sdesc" ${c.sConsumeDescanso?'checked':''}> Sí</label></div>
+      <div class="row"><label class="sm">Máx. noches consecutivas</label><input type="number" id="cf-maxn" value="${c.maxNochesConsecutivas||2}" min="1"></div>
+      <div class="row"><label class="sm">Máx. turnos mismo tipo</label><input type="number" id="cf-maxtt" value="${c.maxTurnosMismoTipo||6}" min="1"></div>
+      <div class="row"><label class="sm">Permitir M tras T</label><label class="chk-pill"><input type="checkbox" id="cf-mt" ${c.permitirMananaTrasTarde?'checked':''}> Sí</label></div>
+      <div class="row"><label class="sm">Permitir incompatibles</label><label class="chk-pill"><input type="checkbox" id="cf-incomp" ${c.permitirIncompatibles?'checked':''}> Sí</label></div>
+      <div class="row"><label class="sm">Aviso exceso horas mensual</label><label class="chk-pill"><input type="checkbox" id="cf-aviso" ${c.avisoExcesoHorasMensual?'checked':''}> Activar</label></div>
+      <div class="row"><label class="sm">Umbral exceso (h/mes)</label><input type="number" id="cf-umbral" value="${c.umbralExcesoHorasMensual||180}" min="0"></div>
+      <div class="row"><label class="sm">Tolerancia saldo mensual (±h)</label><input type="number" id="cf-tolm" value="${c.toleranciaSaldoMensual||8}" min="0"></div>
+      <div class="row"><label class="sm">Tolerancia saldo anual (±h)</label><input type="number" id="cf-tola" value="${c.toleranciaSaldoAnual||40}" min="0"></div>
+      <div class="row"><label class="sm">Regla de finde</label><select id="cf-finde">
+        <option value="sabado-domingo" ${c.reglaFinde==='sabado-domingo'?'selected':''}>Trabaja sábado o domingo</option>
+        <option value="completo" ${c.reglaFinde==='completo'?'selected':''}>Finde completo (sábado y domingo)</option>
+        <option value="contar-viernes-noche" ${c.reglaFinde==='contar-viernes-noche'?'selected':''}>Incluye noche del viernes</option>
+        <option value="contar-domingo-noche" ${c.reglaFinde==='contar-domingo-noche'?'selected':''}>Incluye noche del domingo</option></select></div>
+    </div>
+    <div class="pec-card" style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;">
+      <div style="font-weight:700;margin-bottom:8px;border-bottom:2px solid var(--accent);padding-bottom:6px;">Equidad (pesos del generador)</div>
+      <p class="hint" style="margin-bottom:8px;">Un peso más alto da más prioridad a esa regla durante la generación.</p>
+      ${Object.keys(p).map(k=>`<div class="row"><label class="sm">${escaparHTML(k)}</label>
+        <input type="range" id="peso-${escaparAttr(k)}" min="0" max="10" value="${p[k]||0}" oninput="document.getElementById('peso-val-${escaparAttr(k)}').textContent=this.value" style="flex:1;">
+        <span id="peso-val-${escaparAttr(k)}" style="font-weight:700;min-width:24px;text-align:center;">${p[k]||0}</span></div>`).join('')}
+    </div>
+    <div class="actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveConfig()">Guardar</button></div>`;
+  openModal(html, true);
+}
+function saveConfig(){
+  const c=state.config;
+  c.maxDiasConsecutivos=num('cf-maxc',6); c.minDescansosTrasNoche=num('cf-despnoche',1);
+  c.secuenciaNocheObligatoria=document.getElementById('cf-secuencia').checked; c.sConsumeDescanso=document.getElementById('cf-sdesc').checked;
+  c.maxNochesConsecutivas=num('cf-maxn',2); c.maxTurnosMismoTipo=num('cf-maxtt',6);
+  c.permitirMananaTrasTarde=document.getElementById('cf-mt').checked; c.permitirIncompatibles=document.getElementById('cf-incomp').checked;
+  c.avisoExcesoHorasMensual=document.getElementById('cf-aviso').checked; c.umbralExcesoHorasMensual=num('cf-umbral',180);
+  c.toleranciaSaldoMensual=num('cf-tolm',8); c.toleranciaSaldoAnual=num('cf-tola',40);
+  c.reglaFinde=val('cf-finde');
+  Object.keys(c.pesos).forEach(k=>{ const el=document.getElementById('peso-'+k); if(el) c.pesos[k]=parseInt(el.value); });
+  save(state); closeModal();
+}
+
+/* ============ VISTA DIARIA ============ */
+function openVistaDiaria(){
+  const m=getMes(curAnyo,curMesIdx); const dias=diasEntre(parse(m.inicio),parse(m.fin));
+  const optsD=dias.map(d=>`<option value="${fmt(d)}">${fmt(d)} (${DIAS_LET[d.getDay()]})</option>`).join('');
+  const html=`<h3>📆 Vista diaria operativa</h3>
+    <div class="row"><label class="sm">Día</label><select id="vd-dia" onchange="renderVistaDiaria()">${optsD}</select></div>
+    <div id="vd-out"></div>
+    <div class="actions"><button class="btn primary" onclick="closeModal()">Cerrar</button></div>`;
+  openModal(html, true);
+  renderVistaDiaria();
+}
+function renderVistaDiaria(){
+  const ds=document.getElementById('vd-dia').value; if(!ds) return;
+  const m=getMes(curAnyo,curMesIdx); const d=parse(ds);
+  const turnosTrabajo=state.tiposTurno.filter(t=>t.trabajo&&t.cubreCobertura);
+  const tipo=tipoDiaDe(d);
+  let html=`<p class="hint">${ds} — ${tipo}</p>`;
+  html += turnosTrabajo.map(tn=>{
+    const people=state.trabajadores.filter(t=>getCodigo(m,t.id,ds)===tn.code).map(t=>escaparHTML(t.nombreCompleto)).join(', ')||'<span class="hint">—</span>';
+    const min=state.coberturas.filter(c=>coberturaAplica(c.tipoDia,tipo)&&c.turno===tn.code).map(c=>`${escaparHTML(c.rol)}:${c.min}`).join(', ');
+    return `<div class="list-item"><span style="flex:1;"><b style="color:${textColorSobre(tn.color)};background:${tn.color};padding:2px 6px;border-radius:4px;">${escaparHTML(tn.code)}</b> ${escaparHTML(tn.nombre)} ${min?`<span class="hint">(mín: ${min})</span>`:''}</span><span style="flex:2;">${people}</span></div>`;
+  }).join('');
+  document.getElementById('vd-out').innerHTML=html;
+}
+
+/* ============ INFORMES CSV (Fase 10) ============ */
+function openInformes(){
+  const html=`<h3>📊 Informes y exportación CSV</h3>
+    <p class="hint">Exporta informes en formato CSV (abrible en Excel/Numbers) — todo en local, sin red.</p>
+    <div class="list-edit">
+      <div class="list-item"><span style="flex:1;">📅 CSV mensual por trabajador (turnos y horas)</span><button class="btn sm primary" onclick="csvMensual()">Exportar</button></div>
+      <div class="list-item"><span style="flex:1;">📆 CSV anual (horas, noches, festivos, findes)</span><button class="btn sm primary" onclick="csvAnual()">Exportar</button></div>
+      <div class="list-item"><span style="flex:1;">🔴 Cobertura incumplida por fecha</span><button class="btn sm primary" onclick="csvCobertura()">Exportar</button></div>
+      <div class="list-item"><span style="flex:1;">🌙 Distribución de noches por rol</span><button class="btn sm primary" onclick="csvNochesRol()">Exportar</button></div>
+      <div class="list-item"><span style="flex:1;">⏱️ Saldos de horas (déficit → exceso)</span><button class="btn sm primary" onclick="csvSaldos()">Exportar</button></div>
+      <div class="list-item"><span style="flex:1;">📑 Vacaciones, bajas y permisos</span><button class="btn sm primary" onclick="csvAusencias()">Exportar</button></div>
+      <div class="list-item"><span style="flex:1;">✏️ Cambios manuales tras generación</span><button class="btn sm primary" onclick="csvCambiosManuales()">Exportar</button></div>
+    </div>
+    <div class="actions"><button class="btn primary" onclick="closeModal()">Cerrar</button></div>`;
+  openModal(html, true);
+}
+function csvEsc(s){ s=String(s==null?'':s); return /[",\n;]/.test(s)?'"'+s.replaceAll('"','""')+'"':s; }
+function descargarCSV(nombre, filas){ const csv=filas.map(r=>r.map(csvEsc).join(';')).join('\n'); const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nombre; a.click(); URL.revokeObjectURL(a.href); }
+function csvMensual(){
+  const m=getMes(curAnyo,curMesIdx); const dias=diasEntre(parse(m.inicio),parse(m.fin)); const stats=calcularStatsMes(m,dias);
+  const filas=[['Trabajador','Rol','M','T','N','S','L','Horas','Festivos','Domingos','Sabados','Findes','Ausencias']];
+  state.trabajadores.forEach(t=>{ const s=stats[t.id]||{}; filas.push([t.nombreCompleto,t.rol,s.M||0,s.T||0,s.N||0,s.S||0,s.L||0,(s.horas||0).toFixed(0),s.festivos||0,s.domingos||0,s.sabados||0,s.findes||0,s.ausencias||0]); });
+  descargarCSV(`mensual_${curAnyo}_${curMesIdx+1}.csv`, filas);
+}
+function csvAnual(){
+  const stats=calcularStatsAnyo(curAnyo);
+  const filas=[['Trabajador','Rol','Horas','M','T','N','Findes','Festivos','Domingos','Sabados','Ausencias']];
+  state.trabajadores.forEach(t=>{ const s=stats[t.id]||{}; filas.push([t.nombreCompleto,t.rol,(s.horas||0).toFixed(0),s.M||0,s.T||0,s.N||0,s.findes||0,s.festivos||0,s.domingos||0,s.sabados||0,s.ausencias||0]); });
+  descargarCSV(`anual_${curAnyo}.csv`, filas);
+}
+function csvCobertura(){
+  const m=getMes(curAnyo,curMesIdx); const dias=diasEntre(parse(m.inicio),parse(m.fin));
+  const filas=[['Fecha','Día','Tipo','Turno','Rol','Mínimo','Real','Estado']];
+  dias.forEach(d=>{ const ds=fmt(d); const c=coberturaDia(m,d);
+    state.coberturas.filter(co=>coberturaAplica(co.tipoDia,c.tipoDia)).forEach(co=>{ const k=co.turno+'|'+co.rol; const real=c.conteo[k]||0; filas.push([ds,DIAS_LET[d.getDay()],c.tipoDia,co.turno,co.rol,co.min,real, real<co.min?'DÉFICIT':(real>co.min+3?'EXCEDENTE':'OK')]); });
+  });
+  descargarCSV(`cobertura_${curAnyo}_${curMesIdx+1}.csv`, filas);
+}
+function csvNochesRol(){
+  const stats=calcularStatsAnyo(curAnyo);
+  const filas=[['Rol','Trabajador','Noches']];
+  state.trabajadores.slice().sort((a,b)=>(a.rol||'').localeCompare(b.rol||'')).forEach(t=>{ const s=stats[t.id]||{}; filas.push([t.rol,t.nombreCompleto,s.N||0]); });
+  descargarCSV(`noches_por_rol_${curAnyo}.csv`, filas);
+}
+function csvSaldos(){
+  const stats=calcularStatsAnyo(curAnyo);
+  const arr=state.trabajadores.map(t=>{ const s=stats[t.id]||{}; const obj=t.jornada.horasAnualesObjetivo||1792; const saldo=(s.horas||0)-obj*monthOfYearProgress(curAnyo); return {t,saldo}; });
+  arr.sort((a,b)=>a.saldo-b.saldo);
+  const filas=[['Trabajador','Rol','Horas','Objetivo','Saldo']];
+  arr.forEach(x=> filas.push([x.t.nombreCompleto,x.t.rol,(stats[x.t.id].horas||0).toFixed(0), (x.t.jornada.horasAnualesObjetivo||1792), x.saldo.toFixed(0)]));
+  descargarCSV(`saldos_${curAnyo}.csv`, filas);
+}
+function csvAusencias(){
+  const filas=[['Trabajador','Tipo','Inicio','Fin','Motivo','Días']];
+  state.ausencias.forEach(a=>{ const t=state.trabajadores.find(x=>x.id===a.trabajadorId); const dias=diasEntre(parse(a.inicio),parse(a.fin)).length; filas.push([t?t.nombreCompleto:'(eliminado)',a.tipo,a.inicio,a.fin,a.motivo||'',dias]); });
+  descargarCSV('ausencias.csv', filas);
+}
+function csvCambiosManuales(){
+  const m=getMes(curAnyo,curMesIdx); const filas=[['Trabajador','Fecha','Turno','Origen','Bloqueado','Nota']];
+  Object.keys(m.asignaciones).forEach(k=>{ const a=m.asignaciones[k]; if(a && typeof a==='object' && a.origen===ORIGEN_MANUAL){ const [tid,fecha]=k.split('_'); const t=state.trabajadores.find(x=>x.id===tid); filas.push([t?t.nombreCompleto:tid,fecha,a.turno,a.origen,a.bloqueado?'sí':'no',a.nota||'']); } });
+  descargarCSV(`cambios_manuales_${curAnyo}_${curMesIdx+1}.csv`, filas);
+}
+
+/* ============ COPIAR/PEGAR/SELECCIÓN MÚLTIPLE/DnD/ATAJOS (Fase 9) ============ */
+let _portapapeles=null; // {tipo:'fila'|'patron'|'seleccion', data:...}
+function copiarFila(tid){
+  const m=getMes(curAnyo,curMesIdx); const dias=diasEntre(parse(m.inicio),parse(m.fin));
+  const data=dias.map(d=>({fecha:fmt(d), asig:getAsig(m,tid,fmt(d))}));
+  _portapapeles={tipo:'fila', data};
+  alert('Fila copiada ('+data.length+' días). Usa Pegar en otra fila.');
+}
+function pegarFila(tid){
+  if(!_portapapeles || _portapapeles.tipo!=='fila'){ alert('No hay fila copiada.'); return; }
+  const m=getMes(curAnyo,curMesIdx); const dias=diasEntre(parse(m.inicio),parse(m.fin));
+  if(!confirm('¿Pegar la fila copiada sobre esta fila? Se sobreescribirán las celdas no bloqueadas.')) return;
+  dias.forEach((d,i)=>{ const src=_portapapeles.data[i]; if(!src||!src.asig) return; const ds=fmt(d); const cur=getAsig(m,tid,ds); if(cur&&cur.bloqueado) return; setAsig(m,tid,ds,src.asig.turno,{origen:ORIGEN_MANUAL,nota:src.asig.nota||'',bloqueado:false}); });
+  save(state); renderMes();
+}
+// selección múltiple
+let _selInicio=null, _selCells=[];
+function habilitarSeleccionMultiple(){
+  document.querySelectorAll('table.cuad td.cell').forEach(td=>{
+    td.addEventListener('mousedown', e=>{
+      if(!e.shiftKey) return;
+      e.preventDefault();
+      const tid=td.dataset.tid, fecha=td.dataset.fecha;
+      if(_selInicio){ _seleccionarRango(_selInicio, {tid,fecha}); }
+    });
+    td.addEventListener('click', e=>{
+      if(e.shiftKey && _selInicio){ return; }
+      _selInicio={tid:td.dataset.tid, fecha:td.dataset.fecha};
+    });
+  });
+}
+function _seleccionarRango(a,b){
+  _selCells.forEach(td=>td.classList.remove('selected')); _selCells=[];
+  // misma fila: rango de fechas
+  if(a.tid===b.tid){
+    const m=getMes(curAnyo,curMesIdx); const dias=diasEntre(parse(m.inicio),parse(m.fin));
+    const fa=dias.findIndex(d=>fmt(d)===a.fecha), fb=dias.findIndex(d=>fmt(d)===b.fecha);
+    if(fa<0||fb<0) return;
+    const [ini,fin]=[Math.min(fa,fb),Math.max(fa,fb)];
+    for(let i=ini;i<=fin;i++){ const ds=fmt(dias[i]); const td=document.querySelector(`table.cuad td.cell[data-tid="${cssEscape(a.tid)}"][data-fecha="${ds}"]`); if(td){td.classList.add('selected');_selCells.push(td);} }
+    _promptAsignacionSeleccion(a.tid);
+  }
+}
+function _promptAsignacionSeleccion(tid){
+  const html=`<h3>Asignar a selección</h3>
+    <p class="hint">${_selCells.length} celdas seleccionadas.</p>
+    <div class="row"><label class="sm">Turno</label><select id="sel-turno">${state.tiposTurno.map(t=>`<option value="${t.code}">${escaparHTML(t.code)} — ${escaparHTML(t.nombre)}</option>`).join('')}</select></div>
+    <div class="actions"><button class="btn" onclick="cerrarSeleccion()">Cancelar</button><button class="btn primary" onclick="aplicarSeleccion()">Aplicar</button></div>`;
+  openModal(html);
+}
+function aplicarSeleccion(){
+  const code=document.getElementById('sel-turno').value;
+  const m=getMes(curAnyo,curMesIdx);
+  _selCells.forEach(td=>{ const tid=td.dataset.tid, fecha=td.dataset.fecha; const cur=getAsig(m,tid,fecha); if(cur&&cur.bloqueado) return; setAsig(m,tid,fecha,code,{origen:ORIGEN_MANUAL}); });
+  save(state); closeModal(); cerrarSeleccion(); renderMes();
+}
+function cerrarSeleccion(){ _selCells.forEach(td=>td.classList.remove('selected')); _selCells=[]; closeModal(); }
+
+// atajos de teclado
+let _celdaActiva=null;
+function habilitarAtajos(){
+  document.querySelectorAll('table.cuad td.cell button').forEach(b=>{
+    b.addEventListener('focus', e=>{ const td=b.closest('td'); if(td){ _celdaActiva={tid:td.dataset.tid, fecha:td.dataset.fecha}; } });
+  });
+}
+document.addEventListener('keydown', e=>{
+  // M/T/N/L/V sobre celda activa
+  if(_celdaActiva && !e.target.matches('input,textarea,select')){
+    const k=e.key.toUpperCase();
+    if(['M','T','N','L','S'].includes(k)){
+      const m=getMes(curAnyo,curMesIdx);
+      const cur=getAsig(m,_celdaActiva.tid,_celdaActiva.fecha);
+      if(cur&&cur.bloqueado) return;
+      setAsig(m,_celdaActiva.tid,_celdaActiva.fecha,k,{origen:ORIGEN_MANUAL});
+      save(state); renderCelda(_celdaActiva.tid,_celdaActiva.fecha); e.preventDefault();
+    }
+    if(e.key==='Escape'){ _celdaActiva=null; closeSvPop(); }
+  }
+});
+
+/* ============ TEMA ============ */
+function toggleTema(){
+  const cur=document.documentElement.getAttribute('data-theme')==='dark'?'':'dark';
+  document.documentElement.setAttribute('data-theme', cur);
+  localStorage.setItem('cuadrantes_tema', cur);
+  document.getElementById('themeBtn').textContent = cur==='dark'?'☀️':'🌙';
+}
+
+/* ============ VIABILIDAD ESTRUCTURAL (Fase 11) ============ */
+function comprobarViabilidad(){
+  const el=document.getElementById('viabilityWarn'); if(!el) return;
+  // por rol, comparar plantilla activa vs máximo de mínimos diarios
+  const mensajes=[];
+  state.roles.forEach(r=>{
+    const trabRol=state.trabajadores.filter(t=>t.activo&&t.rol===r).length;
+    // máxima necesidad diaria para ese rol en cualquier tipo de día
+    let maxNeces=0;
+    const tipos=['laborable','sabado','domingo','festivoLaborable','festivoSabado','festivoDomingo'];
+    tipos.forEach(td=>{
+      const suma=state.coberturas.filter(c=>coberturaAplica(c.tipoDia,td)&&c.rol===r).reduce((s,c)=>s+(c.min||0),0);
+      if(suma>maxNeces) maxNeces=suma;
+    });
+    if(maxNeces>0 && trabRol<maxNeces){
+      mensajes.push(`${r}: ${trabRol} activo(s) vs ${maxNeces} necesarios/día`);
+    }
+  });
+  if(mensajes.length){
+    el.style.display='block';
+    el.innerHTML='<b>⚠ Viabilidad estructural:</b> la plantilla puede no cubrir los mínimos configurados. '+mensajes.join(' · ')+'. Ajusta personal o coberturas.';
+  } else { el.style.display='none'; }
+}
+
+/* ============ PDF + BACKUP ============ */
+function exportPDF(){ window.print(); }
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`cuadrantes_residencia_${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href);
+}
+function importJSON(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const s=JSON.parse(e.target.result);
+      if(s.version!==3 && !s.centro){ throw new Error('formato no reconocido'); }
+      if(!confirm('Esto reemplazará todos los datos actuales. ¿Continuar?')) return;
+      migrate(s); save(s); closeModal(); showView('anios');
+      alert('Datos importados correctamente.');
+    }catch(err){ alert('Archivo no válido: '+err.message); }
+  };
+  reader.readAsText(f); ev.target.value='';
+}
+function borrarTodo(){
+  if(!confirm('¿Borrar TODOS los datos y reiniciar con datos de demostración? No se puede deshacer.')) return;
+  if(!confirm('Última confirmación: se perderán trabajadores, turnos, coberturas, festivos y cuadrantes.')) return;
+  localStorage.removeItem(STORE_KEY);
+  state=load(); renderAnios(); alert('Datos reiniciados.');
+}
+
+/* ============ INIT ============ */
+state = load();
+(function(){
+  // tema
+  const tema=localStorage.getItem('cuadrantes_tema'); if(tema){ document.documentElement.setAttribute('data-theme',tema); }
+  const tb=document.getElementById('themeBtn'); if(tb) tb.textContent = tema==='dark'?'☀️':'🌙';
+  // año activo existe
+  if(!state.cuadrantes[state.centro.anyoActivo]){ state.cuadrantes[state.centro.anyoActivo]={meses:{}}; for(let i=0;i<12;i++) state.cuadrantes[state.centro.anyoActivo].meses[i]={inicio:null,fin:null,asignaciones:{},notasDia:{},idx:i}; save(state); }
+  proyectarTodasAusencias();
+  actualizarSavedTag();
+  const last=localStorage.getItem('cuadrantes_last_view');
+  if(last){ try{ const {anyo,mesIdx}=JSON.parse(last); if(state.cuadrantes[anyo]&&state.cuadrantes[anyo].meses[mesIdx]&&state.cuadrantes[anyo].meses[mesIdx].inicio){ curAnyo=anyo; curMesIdx=mesIdx; showView('mes'); renderMes(); return; } }catch(e){} }
+  renderAnios();
+})();
+</script>
+</body>
+</html>
