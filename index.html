@@ -620,9 +620,13 @@ function normalizarEstado(s){
   if(!Array.isArray(s.descansosPendientes)) s.descansosPendientes = [];
   if(!s.centro || typeof s.centro !== 'object') s.centro = defaultState().centro;
   if(!s.config || typeof s.config !== 'object') s.config = defaultConfig();
-  // Merge profundo de config con defaults
+  // Merge profundo de config con defaults — NO sobrescribir cadenciaGlobal si ya existe
   const dc = defaultConfig();
-  Object.keys(dc).forEach(k=>{ if(s.config[k]===undefined) s.config[k]=dc[k]; });
+  Object.keys(dc).forEach(k=>{ 
+    if(k==='cadenciaGlobal') return; // nunca resetear cadencia global
+    if(s.config[k]===undefined) s.config[k]=dc[k]; 
+  });
+  if(!s.config.cadenciaGlobal || typeof s.config.cadenciaGlobal !== 'object') s.config.cadenciaGlobal = {activa:false, secuencia:[], fechaAncla:null};
   if(!s.config.pesos || typeof s.config.pesos !== 'object') s.config.pesos = dc.pesos || {};
   if(dc.pesos) Object.keys(dc.pesos).forEach(k=>{ if(s.config.pesos[k]===undefined) s.config.pesos[k]=dc.pesos[k]; });
   // Trabajadores: merge profundo de preferencias y jornada
@@ -2684,17 +2688,13 @@ function guardarCadenciaGlobal(){
   for(const code of seq){
     if(!['M','T','N','L'].includes(code)){ alert('Código no válido: '+code+'. Usa solo M, T, N, L.'); return; }
   }
-  if(!state.config.cadenciaGlobal) state.config.cadenciaGlobal = {};
-  state.config.cadenciaGlobal.activa = activa;
-  state.config.cadenciaGlobal.secuencia = seq;
-  state.config.cadenciaGlobal.fechaAncla = ancla || null;
-  save(state);
-  // Aplicar a todos los meses definidos
+  state.config.cadenciaGlobal = { activa:activa, secuencia:seq, fechaAncla:ancla||null };
+  // Aplicar a todos los meses definidos si está activa
   if(activa) aplicarCadenciaGlobalATodo();
   save(state);
   closeModal();
-  if(curMesIdx!==null) renderMes();
-  alert(activa ? `Cadencia aplicada: ${seq.join('-')} (${seq.length} días de ciclo) a ${state.trabajadores.filter(t=>t.activo).length} cuidadoras.` : 'Cadencia global desactivada.');
+  if(curMesIdx!==null && curAnyo!==null) renderMes();
+  alert(activa ? `✅ Cadencia guardada y aplicada: ${seq.join('-')}\n(${seq.length} días de ciclo, ${state.trabajadores.filter(t=>t.activo).length} cuidadoras)` : 'Cadencia global desactivada.');
 }
 function generarMes(){
   const cg = state.config.cadenciaGlobal;
