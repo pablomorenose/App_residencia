@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cuadrantes Residencia</title>
+<title>Cuadrantes Residencia — Cuidadoras</title>
 <style>
 /* ===================== RESET + BASE ===================== */
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -311,7 +311,7 @@ html[data-theme="dark"] .tbl th{ background:#262b35;}
   <h1>🏥 Cuadrantes Residencia<span class="sub" id="hSub"></span><span class="sub" style="margin-left:14px;font-size:11px;">v3.0</span></h1>
   <span class="saved-tag" id="savedTag"></span>
   <button class="btn sm ghost no-print" onclick="openCentro()">Centro</button>
-  <button class="btn sm ghost no-print" onclick="openTrabajadores()">Trabajadores</button>
+  <button class="btn sm ghost no-print" onclick="openTrabajadores()">Cuidadoras</button>
   <button class="btn sm ghost no-print" onclick="openTurnos()">Turnos</button>
   <button class="btn sm ghost no-print" onclick="openCoberturas()">Coberturas</button>
   <button class="btn sm ghost no-print" onclick="openAusencias()">Ausencias</button>
@@ -329,9 +329,6 @@ html[data-theme="dark"] .tbl th{ background:#262b35;}
 
 <main>
   <div id="saveErrorBanner" style="display:none;background:#fee2e2;border:1px solid #fecaca;color:#b91c1c;padding:8px 14px;font-size:13px;font-weight:600;text-align:center;position:sticky;top:50px;z-index:49;border-radius:0;"></div>
-  <div class="legal-notice no-print" id="legalNotice">
-    <span>⚠️ Revise el cuadrante final conforme al convenio, normativa laboral aplicable y necesidades reales del centro. Esta aplicación es una ayuda a la planificación y no garantiza cumplimiento legal automático.</span>
-    <span class="x" onclick="document.getElementById('legalNotice').style.display='none'">✕</span>
   </div>
   <div class="viability-warn no-print" id="viabilityWarn" style="display:none;"></div>
 
@@ -420,6 +417,7 @@ function defaultConfig(){
     minDescansosTrasNoche:1,
     secuenciaNocheObligatoria:false,
     sConsumeDescanso:false,
+    modoSaliente:'obligatorio', // 'obligatorio' | 'sinSaliente' | 'opcionalPlantilla'
     maxNochesConsecutivas:2,
     maxTurnosMismoTipo:6,
     permitirMananaTrasTarde:true,
@@ -428,33 +426,21 @@ function defaultConfig(){
     umbralExcesoHorasMensual:180,
     toleranciaSaldoMensual:8,
     toleranciaSaldoAnual:40,
-    reglaFinde:'sabado-domingo', // sabado-domingo | contar-viernes-noche | contar-domingo-noche | completo
+    reglaFinde:'sabado-domingo',
     pesos:{ horasTotales:10, noches:8, tardes:7, mananas:7, finesSemana:8, domingos:6, festivos:7, evitarRepetirTurno:5, respetarPreferencias:9 }
   };
 }
-function defaultRoles(){ return ['TCAE','Enfermería','Limpieza','Cocina','Recepción','Fisioterapia','Médico/a','Coordinación','Dirección']; }
+function defaultRoles(){ return ['Cuidadora']; }
 function defaultCoberturas(){
   const base = [
-    ['laborable','M','TCAE',6],['laborable','M','Enfermería',2],
-    ['laborable','T','TCAE',4],['laborable','T','Enfermería',1],
-    ['laborable','N','TCAE',2],['laborable','N','Enfermería',1],
-    ['sabado','M','TCAE',6],['sabado','M','Enfermería',2],
-    ['sabado','T','TCAE',4],['sabado','T','Enfermería',1],
-    ['sabado','N','TCAE',2],['sabado','N','Enfermería',1],
-    ['domingo','M','TCAE',5],['domingo','M','Enfermería',2],
-    ['domingo','T','TCAE',4],['domingo','T','Enfermería',1],
-    ['domingo','N','TCAE',2],['domingo','N','Enfermería',1],
-    ['festivoLaborable','M','TCAE',5],['festivoLaborable','M','Enfermería',2],
-    ['festivoLaborable','T','TCAE',4],['festivoLaborable','T','Enfermería',1],
-    ['festivoLaborable','N','TCAE',2],['festivoLaborable','N','Enfermería',1],
-    ['festivoSabado','M','TCAE',5],['festivoSabado','M','Enfermería',2],
-    ['festivoSabado','T','TCAE',4],['festivoSabado','T','Enfermería',1],
-    ['festivoSabado','N','TCAE',2],['festivoSabado','N','Enfermería',1],
-    ['festivoDomingo','M','TCAE',5],['festivoDomingo','M','Enfermería',2],
-    ['festivoDomingo','T','TCAE',4],['festivoDomingo','T','Enfermería',1],
-    ['festivoDomingo','N','TCAE',2],['festivoDomingo','N','Enfermería',1],
+    ['laborable','M',6],['laborable','T',4],['laborable','N',2],
+    ['sabado','M',5],['sabado','T',4],['sabado','N',2],
+    ['domingo','M',5],['domingo','T',3],['domingo','N',2],
+    ['festivoLaborable','M',5],['festivoLaborable','T',3],['festivoLaborable','N',2],
+    ['festivoSabado','M',5],['festivoSabado','T',3],['festivoSabado','N',2],
+    ['festivoDomingo','M',5],['festivoDomingo','T',3],['festivoDomingo','N',2],
   ];
-  return base.map((b,i)=>({id:'cob'+i, tipoDia:b[0], turno:b[1], rol:b[2], min:b[3]}));
+  return base.map((b,i)=>({id:'cob'+i, tipoDia:b[0], turno:b[1], min:b[2]}));
 }
 function festivosEspanaAnyo(anyo){
   return [
@@ -476,34 +462,29 @@ function festivosDemo(){
   out.push({fecha:'2026-10-15', nombre:'Fiestas del municipio (ej.)', tipo:'local'});
   return out;
 }
-// Demo coherente: 10 TCAE, 4 Enfermería (suficiente para M:6/T:4/N:2 con rotación)
+// Demo: 14 cuidadoras (suficiente para cubrir M:6/T:4/N:2 con rotación)
 function trabajadoresDemo(){
   const base = [
-    ['Ana','García López','TCAE'],['María','Fernández Ruiz','TCAE'],['Lucía','Martín Serrano','TCAE'],
-    ['Elena','Pérez Gómez','TCAE'],['Carmen','Sánchez Romero','TCAE'],['Isabel','Ramírez Ortega','TCAE'],
-    ['Rosa','Jiménez Delgado','TCAE'],['Nuria','Ruiz Ávila','TCAE'],['Pilar','Serrano Lozano','TCAE'],
-    ['Beatriz','Cano Medina','TCAE'],
-    ['Raquel','Gil Herrera','Enfermería'],['Paula','Molina Castro','Enfermería'],
-    ['Cristina','Moreno Cano','Enfermería'],['Sara','Ramos Vega','Enfermería'],
-    ['Sofía','Lozano Vega','Limpieza'],['Patricia','Herrera Nieto','Limpieza'],
-    ['Javier','Cano Bravo','Cocina'],['Diego','Marín Peña','Recepción'],
-    ['Marta','Ibáñez Flores','Fisioterapia'],['Pedro','Castro Ríos','Médico/a'],
+    ['Ana','García López'],['María','Fernández Ruiz'],['Lucía','Martín Serrano'],
+    ['Elena','Pérez Gómez'],['Carmen','Sánchez Romero'],['Isabel','Ramírez Ortega'],
+    ['Rosa','Jiménez Delgado'],['Nuria','Ruiz Ávila'],['Pilar','Serrano Lozano'],
+    ['Beatriz','Cano Medina'],['Raquel','Gil Herrera'],['Paula','Molina Castro'],
+    ['Cristina','Moreno Cano'],['Sara','Ramos Vega'],
   ];
-  return base.map((b,i)=>{
-    const turnosPermitidos = b[2]==='Médico/a' ? ['M','T'] : ['M','T','N'];
-    return {
-      id:'t'+(i+1), nombre:b[0], apellidos:b[1], nombreCompleto:b[1]+', '+b[0], activo:true, rol:b[2],
-      jornada:{ horasAnualesObjetivo:1792, horasMensualesObjetivo:null, horasSemanalesObjetivo:40, porcentajeJornada:100 },
-      preferencias:{ turnosPermitidos, soloTurnos:false, soloTurnosTipo:'', noTrabajaNoches: b[2]==='Médico/a', noTrabajaFinesSemana:false, maxDiasConsecutivos:null, minDescansosTrasNoche:null, diasNoDisponibles:[], restriccionesSemanales:[] },
-      saldoInicialHoras:0, observaciones:''
-    };
-  });
+  return base.map((b,i)=>({
+    id:'t'+(i+1), nombre:b[0], apellidos:b[1], nombreCompleto:b[1]+', '+b[0], activo:true, rol:'Cuidadora',
+    jornada:{ horasAnualesObjetivo:1792, horasMensualesObjetivo:null, horasSemanalesObjetivo:40, porcentajeJornada:100 },
+    preferencias:{ turnosPermitidos:['M','T','N'], soloTurnos:false, soloTurnosTipo:'', noTrabajaNoches:false, noTrabajaFinesSemana:false, maxDiasConsecutivos:null, minDescansosTrasNoche:null, diasNoDisponibles:[], restriccionesSemanales:[] },
+    saldoInicialHoras:0, observaciones:''
+  }));
 }
 function plantillasDemo(){
   return [
-    {id:'plt1', nombre:'Mañanas rotativa', secuencia:['M','M','M','M','M','L','L']},
-    {id:'plt2', nombre:'Noches (N-S-L)', secuencia:['N','S','L','L','M','M','M']},
-    {id:'plt3', nombre:'Tarde rotativa', secuencia:['T','T','T','T','T','L','L']},
+    {id:'plt1', nombre:'Mañanas', secuencia:['M','M','M','M','M','L','L']},
+    {id:'plt2', nombre:'Tardes', secuencia:['T','T','T','T','T','L','L']},
+    {id:'plt3', nombre:'Noches con saliente', secuencia:['N','N','S','L','L','L','L']},
+    {id:'plt4', nombre:'Noches sin saliente', secuencia:['N','N','L','L','L','L','L']},
+    {id:'plt5', nombre:'Apoyo flexible', secuencia:['M','M','T','T','L','L','L']},
   ];
 }
 function defaultState(){
@@ -569,9 +550,10 @@ function migrate(s){
   if(!s.centro) s.centro = defaultState().centro;
   if(!s.centro.modoMes) s.centro.modoMes = 'natural';
   if(!s.trabajadores) s.trabajadores = [];
-  if(!s.roles) s.roles = defaultRoles();
+  s.roles = ['Cuidadora']; // Modelo único de cuidadoras
   if(!s.tiposTurno) s.tiposTurno = defaultTurnos();
   if(!s.config) s.config = defaultConfig();
+  if(!s.config.modoSaliente) s.config.modoSaliente = 'obligatorio';
   if(!s.config.reglaFinde) s.config.reglaFinde = 'sabado-domingo';
   if(!s.config.pesos) s.config.pesos = defaultConfig().pesos;
   if(!s.festivos) s.festivos = [];
@@ -581,8 +563,9 @@ function migrate(s){
   if(!s.cuadrantes) s.cuadrantes = {};
   if(!s.historialGeneraciones) s.historialGeneraciones = [];
   if(!s.descansosPendientes) s.descansosPendientes = [];
-  // trabajadores: backfill
+  // trabajadores: backfill + migrar a Cuidadora
   s.trabajadores.forEach(t=>{
+    t.rol = 'Cuidadora'; // Modelo único
     if(!t.preferencias) t.preferencias = {turnosPermitidos:['M','T','N'],soloTurnos:false,soloTurnosTipo:'',noTrabajaNoches:false,noTrabajaFinesSemana:false,maxDiasConsecutivos:null,minDescansosTrasNoche:null,diasNoDisponibles:[],restriccionesSemanales:[]};
     if(!t.jornada) t.jornada = {horasAnualesObjetivo:1792,horasMensualesObjetivo:null,horasSemanalesObjetivo:40,porcentajeJornada:100};
     if(t.activo===undefined) t.activo = true;
@@ -1203,7 +1186,7 @@ function renderMes(){
 
   // CABECERA
   const thead = document.createElement('thead'); const headRow = document.createElement('tr');
-  const th0 = document.createElement('th'); th0.className='namecol'; th0.textContent='Trabajador'; headRow.appendChild(th0);
+  const th0 = document.createElement('th'); th0.className='namecol'; th0.textContent='Cuidadora'; headRow.appendChild(th0);
   dias.forEach(d=>{
     const dn=d.getDate(), dl=DIAS_LET[d.getDay()], isSun=d.getDay()===0;
     const ds=fmt(d);
@@ -1229,8 +1212,7 @@ function renderMes(){
   trabajadores.forEach(t=>{
     const tr = document.createElement('tr');
     const tdN = document.createElement('td'); tdN.className='namecol';
-    tdN.innerHTML = `<span class="rol">${escaparHTML(t.rol||'')}</span>
-      <span class="nm">${escaparHTML(t.nombreCompleto||t.nombre||'')}</span>
+    tdN.innerHTML = `<span class="nm">${escaparHTML(t.nombreCompleto||t.nombre||'')}</span>
       <div class="row-tools">
         <button onclick="copiarFila('${t.id}')" title="Copiar fila">⧉</button>
         <button onclick="pegarFila('${t.id}')" title="Pegar fila">📋</button>
@@ -1268,13 +1250,11 @@ function renderMes(){
       `<span class="lg"><span class="dot" style="background:${t.color};"></span><b>${escaparHTML(t.code)}</b> ${escaparHTML(t.nombre)}</span>`).join('')
   }</div>`;
 
-  const filtrosRol = [''].concat(state.roles).map(r=>`<option value="${escaparAttr(r)}" ${_vistaMes.rol===r?'selected':''}>${escaparHTML(r||'(todos los roles)')}</option>`).join('');
   const bar = `<div class="month-bar no-print">
     <button class="btn sm" onclick="cambiarMes(-1)" title="Mes anterior">‹</button>
     <h2>${MESES_NOM[curMesIdx]} ${curAnyo}</h2>
     <button class="btn sm" onclick="cambiarMes(1)" title="Mes siguiente">›</button>
     <span class="range-pill">${fmt(parse(m.inicio))} → ${fmt(parse(m.fin))} (${state.centro.modoMes})</span>
-    <select onchange="_vistaMes.rol=this.value;renderMes()" style="max-width:140px;">${filtrosRol}</select>
     <label class="chk-pill ${_vistaMes.mostrarInactivos?'on':''}"><input type="checkbox" ${_vistaMes.mostrarInactivos?'checked':''} onchange="_vistaMes.mostrarInactivos=this.checked;renderMes()"> Inactivos</label>
     <button class="btn primary sm" onclick="generarConUI()">⚙ Generar</button>
     <button class="btn sm" onclick="deshacerGeneracion()" title="Deshacer última generación">↶ Deshacer</button>
@@ -1352,22 +1332,22 @@ function coberturaDia(m, d){
   const ds=fmt(d); const tipo=tipoDiaDe(d);
   const conteo={};
   state.trabajadores.forEach(t=>{
+    if(!t.activo) return;
     const code = getCodigo(m, t.id, ds);
     if(!code || !turnoEsTrabajo(code)) return;
-    const rol = t.rol || '—';
     // para cada turno base configurado, ¿este code lo cubre?
     state.tiposTurno.forEach(bt=>{
       if(bt.trabajo && bt.cubreCobertura && cubreElTurno(code, bt.code)){
-        const k = bt.code+'|'+rol; conteo[k]=(conteo[k]||0)+1;
+        const k = bt.code; conteo[k]=(conteo[k]||0)+1;
       }
     });
   });
   const alerts=[]; let estado='ok', resumen='';
   const relevantes = state.coberturas.filter(c=>coberturaAplica(c.tipoDia, tipo));
-  relevantes.forEach(c=>{ const k=c.turno+'|'+c.rol; const real=conteo[k]||0; if(real<c.min){ alerts.push(`${c.rol} ${c.turno}: ${real}/${c.min}`); estado='bad'; } });
-  let overs=0; relevantes.forEach(c=>{ const k=c.turno+'|'+c.rol; const real=conteo[k]||0; if(real>c.min+3) overs++; });
+  relevantes.forEach(c=>{ const k=c.turno; const real=conteo[k]||0; if(real<c.min){ alerts.push(`${c.turno}: faltan ${c.min-real} cuidadora(s)`); estado='bad'; } });
+  let overs=0; relevantes.forEach(c=>{ const k=c.turno; const real=conteo[k]||0; if(real>c.min+3) overs++; });
   if(estado==='ok' && overs>0) estado='warn';
-  resumen = alerts.length ? 'Faltan: '+alerts.join(', ') : (overs?'Excedente':'Completo');
+  resumen = alerts.length ? alerts.join(', ') : (overs?'Excedente':'Completo');
   return { estado, alerts, resumen, conteo, tipo };
 }
 function calcularCoberturaMes(m, dias){ const out={}; dias.forEach(d=> out[fmt(d)]=coberturaDia(m,d)); return out; }
@@ -1496,7 +1476,7 @@ function renderContadores(m, dias){
     const horasObj = t.jornada.horasAnualesObjetivo || 1792;
     const saldo = (s.horas||0) - horasObj*monthOfYearProgress(curAnyo);
     const saldoCls = Math.abs(saldo) <= state.config.toleranciaSaldoAnual ? 'ok':'bad';
-    return `<div class="c-card"><div class="c-name">${escaparHTML(t.nombreCompleto||'')}</div><div class="c-rol">${escaparHTML(t.rol||'')}</div>
+    return `<div class="c-card"><div class="c-name">${escaparHTML(t.nombreCompleto||'')}</div>
       <div class="c-stats">
         <div class="stat h ${saldoCls}"><span class="v">${(s.horas||0).toFixed(0)}h</span><span class="l">Horas</span></div>
         <div class="stat w"><span class="v">${s.findes||0}</span><span class="l">Findes</span></div>
@@ -1978,19 +1958,30 @@ function generarAutomatico(seed, mejoraLocal){
   dias.forEach(d=>{
     const ds=fmt(d); const tipo=tipoDiaDe(d);
     turnosOrdenados.forEach(tn=>{
-      const rolesOrd = [...new Set(state.coberturas.filter(c=>coberturaAplica(c.tipoDia,tipo)&&c.turno===tn.code).map(c=>c.rol))]
-        .sort((a,b)=> (a==='Enfermería'?0:1)-(b==='Enfermería'?0:1));
-      rolesOrd.forEach(rol=>{
-        const min = (state.coberturas.find(c=>coberturaAplica(c.tipoDia,tipo)&&c.turno===tn.code&&c.rol===rol)||{}).min||0;
-        let cubierto = state.trabajadores.filter(t=> t.rol===rol && getCodigo(m,t.id,ds)===tn.code).length;
-        for(; cubierto<min; cubierto++){
-          const cand = elegirCandidato(tn, rol, d, m, acum, cfg, pesos, rng);
-          if(!cand){ noCubiertas.push(`${ds} ${tn.code} ${rol} (min ${min})`); break; }
-          setAsig(m, cand.id, ds, tn.code, {origen:ORIGEN_AUTO, bloqueado:false});
-          actualizarAcum(acum, cand.id, tn.code, d);
-          if(tn.code==='N' && cfg.secuenciaNocheObligatoria) aplicarSecuenciaNoche(anyo, idx, cand.id, ds);
+      // Sin roles: cobertura directa por turno y tipo de día
+      const cobTurno = state.coberturas.find(c=>coberturaAplica(c.tipoDia,tipo)&&c.turno===tn.code);
+      const min = cobTurno ? cobTurno.min : 0;
+      if(!min) return;
+      let cubierto = state.trabajadores.filter(t=> t.activo && getCodigo(m,t.id,ds)===tn.code).length;
+      for(; cubierto<min; cubierto++){
+        const cand = elegirCandidato(tn, 'Cuidadora', d, m, acum, cfg, pesos, rng);
+        if(!cand){ noCubiertas.push(`${ds} ${tn.code}: falta ${min-cubierto} cuidadora(s)`); break; }
+        setAsig(m, cand.id, ds, tn.code, {origen:ORIGEN_AUTO, bloqueado:false});
+        actualizarAcum(acum, cand.id, tn.code, d);
+        // Aplicar secuencia noche según modoSaliente
+        if(tn.code==='N'){
+          if(cfg.modoSaliente==='obligatorio' && cfg.secuenciaNocheObligatoria) aplicarSecuenciaNoche(anyo, idx, cand.id, ds);
+          else if(cfg.modoSaliente==='sinSaliente'){
+            // Aplicar L directamente tras N (sin S)
+            const minD = cfg.minDescansosTrasNoche||1;
+            for(let off=1;off<=minD;off++){
+              const fd=sumarDiasFecha(ds,off); const info=mesQueContiene(fd);
+              if(info){ const cur=getAsig(info.mes,cand.id,fd); if(!cur||(!cur.bloqueado&&cur.origen!==ORIGEN_MANUAL&&cur.origen!==ORIGEN_AUSENCIA)) setAsig(info.mes,cand.id,fd,'L',{origen:ORIGEN_REGLA,bloqueado:true}); }
+            }
+          }
+          // opcionalPlantilla: no generar S ni L automáticamente — la cadencia/plantilla manda
         }
-      });
+      }
     });
     // descansos: asignar L a quien lleve muchos días seguidos sin descanso y no tenga turno
     state.trabajadores.forEach(t=>{
@@ -2048,7 +2039,7 @@ function elegirCandidato(tn, rol, d, m, acum, cfg, pesos, rng){
   const ds=fmt(d); const esFinde=(d.getDay()===0||d.getDay()===6);
   const fest=state.festivos.find(f=>f.fecha===ds);
   let cand = state.trabajadores.filter(t=>{
-    if(!t.activo) return false; if(t.rol!==rol) return false;
+    if(!t.activo) return false;
     const a=getAsig(m,t.id,ds); if(a) return false;
     const p=t.preferencias;
     if(!p.turnosPermitidos.includes(tn.code)) return false;
@@ -2327,8 +2318,8 @@ function openTrabajadores(){
   if(_filtrosTrab.orden==='apellidos') lista.sort((a,b)=>(a.apellidos||'').localeCompare(b.apellidos||''));
   if(_filtrosTrab.orden==='rol') lista.sort((a,b)=>(a.rol||'').localeCompare(b.rol||''));
   const optsRol=[''].concat(state.roles).map(r=>`<option value="${escaparAttr(r)}" ${_filtrosTrab.rol===r?'selected':''}>${escaparHTML(r||'(todos los roles)')}</option>`).join('');
-  const html=`<h3>👥 Trabajadores <span style="font-weight:400;color:var(--muted);font-size:13px;">(${state.trabajadores.length})</span></h3>
-    <p class="hint">Gestión de personal de la residencia.</p>
+  const html=`<h3>👥 Cuidadoras <span style="font-weight:400;color:var(--muted);font-size:13px;">(${state.trabajadores.length})</span></h3>
+    <p class="hint">Gestión de cuidadoras de la residencia.</p>
     <div class="filtros-bar">
       <input type="text" placeholder="Buscar..." value="${escaparAttr(_filtrosTrab.texto)}" oninput="_filtrosTrab.texto=this.value;openTrabajadores();this.focus()">
       <select onchange="_filtrosTrab.rol=this.value;openTrabajadores()">${optsRol}</select>
