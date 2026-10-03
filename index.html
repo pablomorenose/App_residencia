@@ -373,6 +373,12 @@ const BACKUP_KEYS = ['cuadrantes_residencia_backup_1','cuadrantes_residencia_bac
 const MESES_NOM = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DIAS_LET = ['D','L','M','X','J','V','S'];
 const BASICOS = ['M','T','N','L','VAC','BAJ','PER'];
+// Secuencias de 21 semanas (147 días, empiezan en lunes) del documento de la residencia
+const CICLO_21 = {
+  1:'T-L-M-M-M-L-L-M-M-M-L-T-T-T-T-L-T-T-T-N-N-L-L-L-M-M-M-M-T-L-M-M-M-L-L-M-M-L-T-T-T-T-N-N-L-L-M-M-M-N-N-N-L-L-L-L-M-M-M-M-L-T-T-L-M-L-T-T-T-T-L-M-M-M-M-L-L-M-T-T-T-L-M-M-M-L-M-M-M-N-N-L-L-L-L-M-M-M-L-T-T-N-N-L-L-T-T-T-T-L-M-M-M-M-L-T-T-T-T-L-T-T-N-N-L-L-M-M-M-M-L-M-M-T-T-N-L-L-M-M-T-T-T-L-T-T-T',
+  2:'T-L-M-M-M-L-L-M-M-L-L-T-T-T-T-L-L-T-T-N-N-L-L-M-M-M-M-M-T-L-M-M-M-L-L-M-M-L-T-T-T-T-L-N-L-L-M-M-M-N-N-N-L-L-L-L-M-M-M-M-L-T-T-L-M-T-T-T-T-T-L-M-M-M-M-L-L-M-T-T-T-L-M-M-M-L-M-M-M-N-N-N-L-L-L-M-M-M-L-T-T-N-N-L-L-T-T-T-T-L-M-M-M-M-L-T-T-T-T-L-T-T-N-N-L-L-M-M-M-M-L-M-M-T-T-N-L-L-M-M-T-T-T-L-T-T-T'
+};
+const ANCLA_CICLO_21 = '2026-09-28';
 const ORIGEN_MANUAL='manual', ORIGEN_AUTO='automatico', ORIGEN_REGLA='regla', ORIGEN_AUSENCIA='ausencia', ORIGEN_CADENCIA='cadencia';
 
 /* ============ HELPERS DE SEGURIDAD (Fase 0.1) ============ */
@@ -415,21 +421,18 @@ function defaultConfig(){
     toleranciaSaldoAnual:40,
     reglaFinde:'sabado-domingo',
     // Cadencia global: se aplica a todas las cuidadoras con desfase
-    cadenciaGlobal: { activa:false, secuencia:[], fechaAncla:null },
+    cadenciaGlobal: { activa:true, secuencia:CICLO_21[1].split('-'), fechaAncla:ANCLA_CICLO_21, desfase:7 },
     pesos:{ horasTotales:10, noches:8, tardes:7, mananas:7, finesSemana:8, domingos:6, festivos:7 }
   };
 }
 function defaultRoles(){ return ['Cuidadora']; }
 function defaultCoberturas(){
-  const base = [
-    ['laborable','M',6],['laborable','T',4],['laborable','N',2],
-    ['sabado','M',5],['sabado','T',4],['sabado','N',2],
-    ['domingo','M',5],['domingo','T',3],['domingo','N',2],
-    ['festivoLaborable','M',5],['festivoLaborable','T',3],['festivoLaborable','N',2],
-    ['festivoSabado','M',5],['festivoSabado','T',3],['festivoSabado','N',2],
-    ['festivoDomingo','M',5],['festivoDomingo','T',3],['festivoDomingo','N',2],
-  ];
-  return base.map((b,i)=>({id:'cob'+i, tipoDia:b[0], turno:b[1], min:b[2]}));
+  // Documento de la residencia: 7 mañana, 6 tarde, 2 noche todos los días
+  const base = [];
+  ['laborable','sabado','domingo','festivoLaborable','festivoSabado','festivoDomingo'].forEach(td=>{
+    base.push([td,'M',7],[td,'T',6],[td,'N',2]);
+  });
+return base.map((b,i)=>({id:'cob'+i, tipoDia:b[0], turno:b[1], min:b[2]}));
 }
 function festivosEspanaAnyo(anyo){
   return [
@@ -453,18 +456,23 @@ function festivosDemo(){
 }
 // Demo: 14 cuidadoras (suficiente para cubrir M:6/T:4/N:2 con rotación)
 function trabajadoresDemo(){
+  // Auxiliares de la residencia (orden = semana de inicio en el ciclo de 21 semanas).
+  // Patricia (//LUCILA//) queda inactiva: el documento habla de 21 auxiliares y el cuadrante tiene 22 filas.
   const base = [
-    ['Ana','García López'],['María','Fernández Ruiz'],['Lucía','Martín Serrano'],
-    ['Elena','Pérez Gómez'],['Carmen','Sánchez Romero'],['Isabel','Ramírez Ortega'],
-    ['Rosa','Jiménez Delgado'],['Nuria','Ruiz Ávila'],['Pilar','Serrano Lozano'],
-    ['Beatriz','Cano Medina'],['Raquel','Gil Herrera'],['Paula','Molina Castro'],
-    ['Cristina','Moreno Cano'],['Sara','Ramos Vega'],
+    ['Inma (ETERI)','Solaguren Iñigue'],['Caridad','Domenech'],['Lucia','Olmos'],
+    ['Amparo','Romero'],['Patricia (LUCILA)','Botet Boix'],['Andrea','Da Concienciao'],
+    ['Marquesa','Fine'],['Maria Victoria','Asumu'],['Carla (RABAB)','Pechuan Chulvi'],
+    ['Raquel','Fernandez'],['Jennifer (BRYAN)','Capilla'],['Katherine','Lissete'],
+    ['Yuranny','Carrera'],['Lorena (DAYANA)','Gómez Lorite'],['Rozainna (JEREMY)','Simoes'],
+    ['Carmen (ANA CANO)','Aguilar'],['Ana Rosa','Ponce'],['Vivian','Concepción'],
+    ['Mar (EVA M / ANA R. AVI)','Polo'],['Nicolasa','Perez'],['Eva','Sánchez Casinos'],
+    ['Olimpia','Gimenez Míguez'],
   ];
   return base.map((b,i)=>({
-    id:'t'+(i+1), nombre:b[0], apellidos:b[1], nombreCompleto:b[1]+', '+b[0], activo:true, rol:'Cuidadora',
-    jornada:{ horasAnualesObjetivo:1792, horasMensualesObjetivo:null, horasSemanalesObjetivo:40, porcentajeJornada:100 },
+    id:'t'+(i+1), nombre:b[0], apellidos:b[1], nombreCompleto:b[1]+', '+b[0], activo:(i!==4), rol:'Cuidadora',
+    jornada:{ horasAnualesObjetivo:1772, horasMensualesObjetivo:null, horasSemanalesObjetivo:null, porcentajeJornada:100 },
     preferencias:{ turnosPermitidos:['M','T','N'], soloTurnos:false, soloTurnosTipo:'', noTrabajaNoches:false, noTrabajaFinesSemana:false, maxDiasConsecutivos:null, minDescansosTrasNoche:null, diasNoDisponibles:[], restriccionesSemanales:[] },
-    saldoInicialHoras:0, observaciones:''
+    saldoInicialHoras:0, observaciones:(i===4?'Pendiente de confirmar: el documento indica 21 auxiliares y el cuadrante de octubre tiene 22 filas.':'')
   }));
 }
 function plantillasDemo(){
@@ -1254,6 +1262,7 @@ function renderMes(){
     <button class="btn sm" onclick="cambiarMes(1)" title="Mes siguiente">›</button>
     <span class="range-pill">${fmt(parse(m.inicio))} → ${fmt(parse(m.fin))}</span>
     <button class="btn primary sm" onclick="generarMes()">⚙ Generar</button>
+    <button class="btn sm" onclick="revisarReglas()">✔ Revisar</button>
     <button class="btn sm" onclick="clearMes()">🧹 Limpiar</button>
     <button class="btn sm" onclick="defineRangoMes(${curMesIdx})">Editar rango</button>
     <button class="btn sm" onclick="exportPDF()">🖨 PDF</button>
@@ -2323,7 +2332,7 @@ function openTrabajadores(){
       <span style="flex:1;cursor:pointer;" onclick="editTrabajador('${t.id}')"><b>${escaparHTML(t.nombreCompleto)}</b> <span style="color:var(--accent);font-size:11px;">${escaparHTML(t.rol||'')}</span></span>
       <button class="btn sm" onclick="editTrabajador('${t.id}')">Editar</button>
       <button class="btn sm danger" onclick="delTrabajador('${t.id}')">🗑</button></div>`).join('')}</div>
-    <div class="actions"><button class="btn sm" onclick="addTrabajador()">+ Añadir</button><button class="btn primary" onclick="closeModal();renderMes()">Cerrar</button></div>`;
+    <div class="actions"><button class="btn sm" onclick="addTrabajador()">+ Añadir</button><button class="btn sm" onclick="cargarPlantillaResidencia()">Cargar lista de la residencia</button><button class="btn primary" onclick="closeModal();renderMes()">Cerrar</button></div>`;
   openModal(html, true);
 }
 function addTrabajador(){
@@ -2642,10 +2651,16 @@ function openCadenciaGlobal(){
   const html=`<h3>🔁 Cadencia global</h3>
     <p class="hint">Define una secuencia de turnos que se repite para <b>todas</b> las cuidadoras. Cada cuidadora empieza en un punto diferente del ciclo (desfase automático por su posición en la lista).</p>
     <div class="row"><label class="sm">Activar cadencia</label><label class="chk-pill ${cg.activa?'on':''}"><input type="checkbox" id="cg-activa" ${cg.activa?'checked':''}> Activa</label></div>
-    <div class="row"><label class="sm">Secuencia</label><input type="text" id="cg-seq" value="${escaparAttr((cg.secuencia||[]).join('-'))}" placeholder="M-M-T-T-N-L-L" style="text-transform:uppercase;font-weight:700;font-size:16px;letter-spacing:1px;"></div>
+    <div class="row"><label class="sm">Ciclo de la residencia</label><span>
+      <button class="btn sm" onclick="cargarCiclo21(1)">Opción 1 (21 semanas)</button>
+      <button class="btn sm" onclick="cargarCiclo21(2)">Opción 2 (21 semanas)</button></span></div>
+    <p class="hint" style="margin-top:-6px;">Carga la secuencia del documento, pone el desfase de 7 días entre cuidadoras (una semana cada una) y la cobertura 7 mañana / 6 tarde / 2 noche.</p>
+    <div class="row" style="align-items:flex-start;"><label class="sm">Secuencia</label><textarea id="cg-seq" rows="3" placeholder="M-M-T-T-N-L-L" style="text-transform:uppercase;font-weight:700;font-size:13px;letter-spacing:1px;">${escaparHTML((cg.secuencia||[]).join('-'))}</textarea></div>
     <p class="hint" style="margin-top:-6px;">Usa solo: <b>M</b> (mañana), <b>T</b> (tarde), <b>N</b> (noche), <b>L</b> (libre). Separa con guión.</p>
+    <div class="row"><label class="sm">Desfase (días)</label><input type="number" id="cg-desfase" min="0" value="${cg.desfase||1}"></div>
+    <p class="hint" style="margin-top:-6px;">Días de diferencia entre una cuidadora y la siguiente en la lista (solo cuentan las activas). 7 = una semana, para el ciclo de 21 semanas. 1 = un día.</p>
     <div class="row"><label class="sm">Fecha de inicio</label><input type="date" id="cg-ancla" value="${escaparAttr(cg.fechaAncla||'')}"></div>
-    <p class="hint" style="margin-top:-6px;">La primera cuidadora empieza el ciclo en esta fecha. Las demás se desplazan automáticamente.</p>
+    <p class="hint" style="margin-top:-6px;">La primera cuidadora empieza el ciclo en esta fecha (con el ciclo de 21 semanas, un lunes). Las demás se desplazan automáticamente.</p>
     <div class="row"><button class="btn sm" onclick="previsualizarCadenciaGlobal()">👁 Previsualizar</button></div>
     <div id="cg-preview" style="max-height:300px;overflow:auto;margin-top:8px;"></div>
     <div class="actions"><button class="btn" onclick="closeModal()">Cancelar</button>
@@ -2659,15 +2674,15 @@ function previsualizarCadenciaGlobal(){
   const len = seq.length;
   const activas = state.trabajadores.filter(t=>t.activo);
   let html = '<table class="tbl"><thead><tr><th>Cuidadora</th>';
-  for(let d=0;d<14;d++){
+  for(let d=0;d<28;d++){
     const ds=sumarDiasFecha(ancla,d);
     html+=`<th>${ds.slice(8)}${DIAS_LET[parse(ds).getDay()]}</th>`;
   }
   html+='</tr></thead><tbody>';
   activas.forEach((t,i)=>{
     html+=`<tr><td style="text-align:left;font-weight:600;">${escaparHTML(t.nombreCompleto||t.nombre)}</td>`;
-    for(let d=0;d<14;d++){
-      const idx = (d + i) % len; // desfase por posición
+    for(let d=0;d<28;d++){
+      const idx = (d + i*(parseInt(document.getElementById('cg-desfase').value)||1)) % len; // desfase por posición
       const code = seq[idx]||'?';
       const tn = turnoPorCode(code);
       const bg = tn?tn.color:'#eee';
@@ -2688,13 +2703,82 @@ function guardarCadenciaGlobal(){
   for(const code of seq){
     if(!['M','T','N','L'].includes(code)){ alert('Código no válido: '+code+'. Usa solo M, T, N, L.'); return; }
   }
-  state.config.cadenciaGlobal = { activa:activa, secuencia:seq, fechaAncla:ancla||null };
+  state.config.cadenciaGlobal = { activa:activa, secuencia:seq, fechaAncla:ancla||null, desfase:Math.max(0,parseInt(val('cg-desfase'))||1) };
   // Aplicar a todos los meses definidos si está activa
   if(activa) aplicarCadenciaGlobalATodo();
   save(state);
   closeModal();
   if(curMesIdx!==null && curAnyo!==null) renderMes();
   alert(activa ? `✅ Cadencia guardada y aplicada: ${seq.join('-')}\n(${seq.length} días de ciclo, ${state.trabajadores.filter(t=>t.activo).length} cuidadoras)` : 'Cadencia global desactivada.');
+}
+/* Revisión de las condiciones del documento de la residencia para el mes visible */
+function revisarReglas(){
+  const m = getMes(curAnyo, curMesIdx);
+  if(!m || !m.inicio || !m.fin){ alert('Define primero el rango del mes.'); return; }
+  const dias = diasEntre(parse(m.inicio), parse(m.fin));
+  const activas = state.trabajadores.filter(t=>t.activo);
+  const code = (t,d)=> getCodigo(m, t.id, fmt(d));
+  const trab = (t,d)=>{ const c=code(t,d); return !!c && turnoEsTrabajo(c); };
+  const sec = [];
+  // 1. Cobertura 7/6/2
+  const falta = [];
+  dias.forEach(d=>{ const c=coberturaDia(m,d); if(c.alerts.length) falta.push(`${fmt(d).slice(8)}/${fmt(d).slice(5,7)}: ${c.alerts.join(', ')}`); });
+  sec.push({tit:'Cobertura (7 mañana · 6 tarde · 2 noche)', items:falta, ok:'Todos los días cubiertos.'});
+  // 2. Descanso entre jornadas (<12 h): M o T tras N, M tras T
+  const desc = [];
+  activas.forEach(t=>dias.forEach((d,i)=>{ if(i===dias.length-1) return; const a=code(t,d), b=code(t,dias[i+1]);
+    if((a==='N'&&(b==='M'||b==='T'))||(a==='T'&&b==='M')) desc.push(`${t.nombreCompleto}: ${a} → ${b} el ${fmt(dias[i+1]).slice(8)}`); }));
+  sec.push({tit:'Descanso entre jornadas (12 h)', items:desc, ok:'Sin incumplimientos.'});
+  // 3. Máx. 3 noches seguidas y rachas de 6+ días
+  const noch = [], racha6 = [];
+  activas.forEach(t=>{ let n=0, c=0, maxN=0, seis=0;
+    dias.forEach(d=>{ n = code(t,d)==='N' ? n+1 : 0; maxN=Math.max(maxN,n); c = trab(t,d) ? c+1 : 0; if(c===6) seis++; });
+    if(maxN>3) noch.push(`${t.nombreCompleto}: ${maxN} noches seguidas`);
+    if(seis>0) racha6.push(`${t.nombreCompleto}: ${seis} racha(s) de 6 días seguidos`); });
+  sec.push({tit:'Máximo 3 noches seguidas', items:noch, ok:'Sin incumplimientos.'});
+  sec.push({tit:'Semanas de 6 días seguidos trabajados (reducir si se puede)', items:racha6, ok:'Ninguna.', aviso:true});
+  // 4. Fin de semana libre al mes y domingo libre
+  const fin = [], dom = [];
+  activas.forEach(t=>{ let pares=0, libres=0, doms=0, domLibres=0;
+    dias.forEach(d=>{ if(d.getDay()===0){ doms++; if(!trab(t,d)&&code(t,d)) domLibres++;
+        const sab=addDays(d,-1); if(fmt(sab)>=m.inicio){ pares++; if(code(t,sab)&&!trab(t,sab)&&code(t,d)&&!trab(t,d)) libres++; } } });
+    if(pares>0 && libres===0) fin.push(`${t.nombreCompleto}: ningún fin de semana completo libre`);
+    if(doms>=4 && domLibres===0) dom.push(`${t.nombreCompleto}: ningún domingo libre en ${doms} domingos`); });
+  sec.push({tit:'Al menos un fin de semana libre al mes', items:fin, ok:'Todas tienen alguno.'});
+  sec.push({tit:'Domingo libre al menos una vez cada 4 semanas', items:dom, ok:'Todas tienen alguno.'});
+  // 5. Horas anuales
+  const sa = calcularStatsAnyo(curAnyo), horas = [];
+  activas.forEach(t=>{ const h=sa[t.id]?sa[t.id].horas:0; if(h>1772) horas.push(`${t.nombreCompleto}: ${h} h en ${curAnyo} (máx. 1.772 h)`); });
+  sec.push({tit:'Jornada máxima anual (1.772 h)', items:horas, ok:'Nadie la supera con lo planificado hasta ahora.'});
+  const html = `<h3>✔ Revisión de ${MESES_NOM[curMesIdx]} ${curAnyo}</h3>
+    <p class="hint">Condiciones del documento de la residencia. Descanso de 12 h calculado como: no se puede pasar de N a M/T ni de T a M. La regla de 36 h semanales no se comprueba aquí.</p>`
+    + sec.map(x=>`<div style="margin:10px 0;"><b>${x.items.length?(x.aviso?'⚠️':'❌'):'✅'} ${escaparHTML(x.tit)}</b>${
+      x.items.length ? '<ul style="margin:4px 0 0 18px;font-size:12px;">'+x.items.slice(0,40).map(i=>`<li>${escaparHTML(i)}</li>`).join('')+(x.items.length>40?`<li>… y ${x.items.length-40} más</li>`:'')+'</ul>'
+      : `<div class="hint">${escaparHTML(x.ok)}</div>`}</div>`).join('')
+    + `<div class="actions"><button class="btn primary" onclick="closeModal()">Cerrar</button></div>`;
+  openModal(html, true);
+}
+function cargarCiclo21(op){
+  document.getElementById('cg-seq').value = CICLO_21[op];
+  document.getElementById('cg-desfase').value = 7;
+  document.getElementById('cg-activa').checked = true;
+  const an = document.getElementById('cg-ancla'); if(!an.value) an.value = ANCLA_CICLO_21;
+  // cobertura del documento: 7 M / 6 T / 2 N todos los días
+  state.coberturas = defaultCoberturas();
+  save(state);
+  previsualizarCadenciaGlobal();
+}
+function cargarPlantillaResidencia(){
+  if(!confirm('¿Cargar las 22 cuidadoras de la residencia?\n\nSe sustituye la lista actual y se borran sus asignaciones y ausencias. No se puede deshacer.')) return;
+  state.trabajadores = trabajadoresDemo();
+  state.ausencias = []; state.descansosPendientes = [];
+  Object.keys(state.cuadrantes).forEach(y=>{ const a=state.cuadrantes[y]; for(let i=0;i<12;i++){ if(a.meses[i]) a.meses[i].asignaciones = {}; } });
+  if(!state.config.cadenciaGlobal || !state.config.cadenciaGlobal.secuencia.length){
+    state.config.cadenciaGlobal = { activa:true, secuencia:CICLO_21[1].split('-'), fechaAncla:ANCLA_CICLO_21, desfase:7 };
+    state.coberturas = defaultCoberturas();
+  }
+  aplicarCadenciaGlobalATodo();
+  save(state); openTrabajadores();
 }
 function generarMes(){
   const cg = state.config.cadenciaGlobal;
@@ -2736,7 +2820,7 @@ function aplicarCadenciaGlobalEnMes(m){
       let diasDesdeAncla = 0;
       if(d >= dAncla){ let tmp=new Date(dAncla); while(tmp<d){diasDesdeAncla++;tmp=addDays(tmp,1);} }
       else { let tmp=new Date(d); while(tmp<dAncla){diasDesdeAncla--;tmp=addDays(tmp,1);} }
-      const idx = (((diasDesdeAncla + posicion) % len) + len) % len;
+      const idx = (((diasDesdeAncla + posicion*(cg.desfase||1)) % len) + len) % len;
       const code = cg.secuencia[idx];
       if(!code) return;
       setAsig(m, t.id, ds, code, {origen:ORIGEN_CADENCIA, bloqueado:false, cadenciaId:'global', cadenciaModo:'global'});
