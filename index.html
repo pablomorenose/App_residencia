@@ -308,14 +308,13 @@ html[data-theme="dark"] .tbl th{ background:#262b35;}
 <body>
 
 <header>
-  <h1>🏥 Cuadrantes Residencia<span class="sub" id="hSub"></span><span class="sub" style="margin-left:14px;font-size:11px;color:var(--accent);">v4.4 (Oficial Residencia)</span></h1>
+  <h1>🏥 Cuadrantes Residencia<span class="sub" id="hSub"></span></h1>
   <span class="saved-tag" id="savedTag"></span>
   <button class="btn sm ghost no-print" onclick="openCentro()">Centro</button>
   <button class="btn sm ghost no-print" onclick="openTrabajadores()">Cuidadoras</button>
   <button class="btn sm ghost no-print" onclick="openCadenciaGlobal()">Cadencia</button>
   <button class="btn sm ghost no-print" onclick="openFestivos()">Festivos</button>
   <button class="btn sm ghost no-print" onclick="openAusencias()">Ausencias</button>
-  <button class="btn sm primary no-print" onclick="cargarPlantillaResidencia()" title="Restablecer las 22 cuidadoras oficiales y ciclo de 21 semanas del PDF">🔄 Cargar 22 Cuidadoras PDF</button>
   <button class="btn sm ghost no-print" onclick="exportJSON()">Backup</button>
   <label class="btn sm ghost no-print" style="cursor:pointer;">Importar
     <input type="file" accept="application/json" style="display:none;" onchange="importJSON(event)">
@@ -3022,8 +3021,16 @@ function aplicarCadenciaGlobalEnMes(m){
           return true;
         });
         if(!candidatas.length) break;
-        // Elegir preferentemente la última cuidadora de la lista (refuerzo/apoyo)
-        const elegida = candidatas[candidatas.length - 1];
+        // Elegir de forma equitativa a la cuidadora disponible con menos días trabajados en el mes
+        candidatas.sort((a,b) => {
+          let countA = 0, countB = 0;
+          dias.forEach(d => {
+            if(turnoEsTrabajo(codeAt(a.id, d))) countA++;
+            if(turnoEsTrabajo(codeAt(b.id, d))) countB++;
+          });
+          return countA - countB;
+        });
+        const elegida = candidatas[0];
         setAsig(m, elegida.id, ds, turno, {origen:ORIGEN_CADENCIA, bloqueado:false});
         count++;
       }
