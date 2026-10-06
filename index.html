@@ -370,7 +370,7 @@ html[data-theme="dark"] .tbl th{ background:#262b35;}
 
 /* ============ CONSTANTES ============ */
 const STORE_KEY = 'cuadrantes_residencia_v4';
-const BACKUP_KEYS = ['cuadrantes_residencia_backup_1','cuadrantes_residencia_backup_2','cuadrantes_residencia_backup_3','cuadrantes_residencia_backup_4','cuadrantes_residencia_backup_5'];
+const BACKUP_KEYS = ['cuadrantes_residencia_backup_1'];
 const MESES_NOM = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DIAS_LET = ['D','L','M','X','J','V','S'];
 const BASICOS = ['M','T','N','L','VAC','BAJ','PER'];
@@ -508,13 +508,41 @@ function nowISO(){ try{ return new Date().toISOString(); }catch(e){ return ''; }
 function uid(p){ return p+Math.random().toString(36).slice(2,9); }
 
 /* ============ LOAD / MIGRATE / SAVE (Fase 0.2 + 0.3) ============ */
+function limpiarEspacioLocalStorage(){
+  try{
+    const keysToRemove = [
+      'cuadrantes_residencia_backup_2',
+      'cuadrantes_residencia_backup_3',
+      'cuadrantes_residencia_backup_4',
+      'cuadrantes_residencia_backup_5',
+      'cuadrantes_pre_import_backup',
+      'cuadrantes_residencia_v2',
+      'cuadrantes_residencia_v1'
+    ];
+    keysToRemove.forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
+    if(localStorage.getItem(STORE_KEY)){
+      try{ localStorage.removeItem('cuadrantes_residencia_v3'); }catch(e){}
+    }
+  }catch(e){}
+}
 function load(){
+  limpiarEspacioLocalStorage();
   try{
     const raw = localStorage.getItem(STORE_KEY);
     if(raw){ const s = JSON.parse(raw); if(s){ migrate(s); return s; } }
     // intento de migrar desde v3 si no hay v4
     const rawV3 = localStorage.getItem('cuadrantes_residencia_v3');
-    if(rawV3){ try{ const s3 = JSON.parse(rawV3); if(s3){ migrate(s3); save(s3); return s3; } }catch(e){} }
+    if(rawV3){
+      try{
+        const s3 = JSON.parse(rawV3);
+        if(s3){
+          migrate(s3);
+          save(s3);
+          try{ localStorage.removeItem('cuadrantes_residencia_v3'); }catch(e){}
+          return s3;
+        }
+      }catch(e){}
+    }
     const rawV2 = localStorage.getItem('cuadrantes_residencia_v2');
     if(rawV2){ try{ const s2 = JSON.parse(rawV2); if(s2){ migrate(s2); save(s2); return s2; } }catch(e){} }
   }catch(e){ console.warn('load error',e); }
@@ -669,32 +697,54 @@ function normalizarEstado(s){
     if(!['bloqueada','preferente'].includes(t.cadencia.modo)) t.cadencia.modo = 'bloqueada';
     if(!['calendario-fijo','pausar','reiniciar'].includes(t.cadencia.politicaAusencia)) t.cadencia.politicaAusencia = 'calendario-fijo';
   });
+  // Compactar asignaciones de cadencia a strings simples ('M','T','N','L') para reducir el tamaño un 88%
+  if(s.cuadrantes && typeof s.cuadrantes === 'object'){
+    Object.keys(s.cuadrantes).forEach(y=>{
+      const a = s.cuadrantes[y];
+      if(!a || !a.meses) return;
+      Object.keys(a.meses).forEach(idx=>{
+        const m = a.meses[idx];
+        if(!m || !m.asignaciones) return;
+        Object.keys(m.asignaciones).forEach(k=>{
+          const as = m.asignaciones[k];
+          if(as && typeof as === 'object' && !as.bloqueado && !as.nota && (!as.origen || as.origen === ORIGEN_CADENCIA) && (!as.cadenciaId || as.cadenciaId === 'global')){
+            m.asignaciones[k] = as.turno;
+          }
+        });
+      });
+    });
+  }
 }
 function save(s, opts){
   if(s) state = s;
   normalizarEstado(state);
   state.actualizadoEn = nowISO();
-  // Intentar guardado principal primero
   let guardadoOk = false;
-  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); guardadoOk = true; }catch(e){
-    console.warn('save error',e);
-    const banner = document.getElementById('saveErrorBanner');
-    if(banner){ banner.style.display='block'; banner.textContent='⚠️ Error al guardar en este navegador. Exporta una copia JSON inmediatamente.'; }
-    else alert('⚠️ Error al guardar. Exporta una copia JSON.');
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    guardadoOk = true;
+  }catch(e){
+    console.warn('save error, liberando espacio en navegador...', e);
+    limpiarEspacioLocalStorage();
+    try{
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      guardadoOk = true;
+    }catch(e2){
+      console.error('save error tras limpieza', e2);
+      const banner = document.getElementById('saveErrorBanner');
+      if(banner){ banner.style.display='block'; banner.textContent='⚠️ Almacenamiento del navegador saturado. Exporta una copia JSON inmediatamente.'; }
+      else alert('⚠️ Error al guardar. Exporta una copia JSON.');
+    }
   }
   if(!guardadoOk) return;
   // Ocultar banner si existía
   const banner = document.getElementById('saveErrorBanner');
   if(banner) banner.style.display='none';
-  // Solo rotar backups tras guardado exitoso (y no en guardados silenciosos)
+  // Guardar 1 backup ligero si no es silencioso
   if(!opts || !opts.silent){
     try{
-      for(let i=BACKUP_KEYS.length-1;i>0;i--){
-        const prev = localStorage.getItem(BACKUP_KEYS[i-1]);
-        if(prev) localStorage.setItem(BACKUP_KEYS[i], prev);
-      }
       localStorage.setItem(BACKUP_KEYS[0], JSON.stringify(state));
-    }catch(e){ console.warn('backup rotation failed', e); }
+    }catch(e){ console.warn('backup failed', e); }
     actualizarSavedTag();
   }
 }
@@ -751,23 +801,45 @@ function mesQueContiene(fechaStr){
   }
   return null;
 }
-function getAsig(m, tid, fecha){ const k=aKey(tid,fecha); const v = m.asignaciones[k]; return (v && typeof v==='object') ? v : null; }
+function getAsig(m, tid, fecha){
+  if(!m || !m.asignaciones) return null;
+  const k = aKey(tid, fecha);
+  const v = m.asignaciones[k];
+  if(!v) return null;
+  if(typeof v === 'string') return { turno: v, origen: ORIGEN_CADENCIA, bloqueado: false, nota: '', cadenciaId: 'global', cadenciaModo: 'global' };
+  if(typeof v === 'object') return {
+    turno: v.turno || '',
+    origen: v.origen || ORIGEN_MANUAL,
+    bloqueado: !!v.bloqueado,
+    nota: v.nota || '',
+    cadenciaId: v.cadenciaId || null,
+    cadenciaModo: v.cadenciaModo || null
+  };
+  return null;
+}
 function getCodigo(m, tid, fecha){ const a=getAsig(m,tid,fecha); return a ? a.turno : ''; }
 function getCodigoMes(anyo, idx, tid, fecha){ const m = state.cuadrantes[anyo] && state.cuadrantes[anyo].meses[idx]; return m ? getCodigo(m,tid,fecha) : ''; }
 function setAsig(m, tid, fecha, code, meta){
   const k = aKey(tid, fecha);
   if(!code){ delete m.asignaciones[k]; return; }
-  const prev = (m.asignaciones[k] && typeof m.asignaciones[k]==='object') ? m.asignaciones[k] : null;
-  m.asignaciones[k] = {
-    turno: code,
-    origen: (meta && meta.origen) || prev?.origen || ORIGEN_MANUAL,
-    bloqueado: (meta && meta.bloqueado!==undefined) ? meta.bloqueado : (prev?.bloqueado || false),
-    nota: (meta && meta.nota!==undefined) ? meta.nota : (prev?.nota || ''),
-    cadenciaId: (meta && meta.cadenciaId) || (prev?.cadenciaId) || null,
-    cadenciaModo: (meta && meta.cadenciaModo) || (prev?.cadenciaModo) || null,
-    actualizadoEn: nowISO(),
-    actualizadoPor: 'local'
-  };
+  const prev = getAsig(m, tid, fecha);
+  const origen = (meta && meta.origen) || prev?.origen || ORIGEN_MANUAL;
+  const bloqueado = (meta && meta.bloqueado!==undefined) ? meta.bloqueado : (prev?.bloqueado || false);
+  const nota = (meta && meta.nota!==undefined) ? meta.nota : (prev?.nota || '');
+  const cadenciaId = (meta && meta.cadenciaId) || (prev?.cadenciaId) || null;
+  const cadenciaModo = (meta && meta.cadenciaModo) || (prev?.cadenciaModo) || null;
+
+  // Optimización: almacenar turnos estándar de cadencia como string simple ('M','T','N','L') para ahorrar un 88% de espacio
+  if(!bloqueado && !nota && origen === ORIGEN_CADENCIA && (!cadenciaId || cadenciaId === 'global') && (!cadenciaModo || cadenciaModo === 'global')){
+    m.asignaciones[k] = code;
+    return;
+  }
+  const obj = { turno: code, origen };
+  if(bloqueado) obj.bloqueado = true;
+  if(nota) obj.nota = nota;
+  if(cadenciaId && cadenciaId !== 'global') obj.cadenciaId = cadenciaId;
+  if(cadenciaModo && cadenciaModo !== 'global') obj.cadenciaModo = cadenciaModo;
+  m.asignaciones[k] = obj;
 }
 function delAsig(m, tid, fecha){ delete m.asignaciones[aKey(tid,fecha)]; }
 function isBloqueadaAsig(asig){ return !!(asig && asig.bloqueado); }
@@ -2217,7 +2289,11 @@ function deshacerGeneracion(){
 // Normaliza un mapa de asignaciones ignorando el timestamp para comparar de forma estable
 function normalizarAsignaciones(asig){
   const out={};
-  Object.keys(asig||{}).forEach(k=>{ const a=asig[k]; if(a&&typeof a==='object') out[k]={turno:a.turno, origen:a.origen, bloqueado:!!a.bloqueado, nota:a.nota||''}; });
+  Object.keys(asig||{}).forEach(k=>{
+    const a=asig[k];
+    if(typeof a === 'string') out[k]={turno:a, origen:ORIGEN_CADENCIA, bloqueado:false, nota:''};
+    else if(a&&typeof a==='object') out[k]={turno:a.turno, origen:a.origen, bloqueado:!!a.bloqueado, nota:a.nota||''};
+  });
   return out;
 }
 function compararVersiones(){
@@ -2568,17 +2644,17 @@ function updTurnoCode(old,v){
   const t=turnoPorCode(old); if(!t||isTurnoBasico(old)) return;
   const r=validarCodigoTurno(v); if(!r.ok){ alert(r.msg); openTurnos(); return; }
   if(r.v!==old && state.tiposTurno.some(x=>x.code===r.v)){ alert('Ya existe un turno con código '+r.v); openTurnos(); return; }
-  Object.keys(state.cuadrantes).forEach(y=>{ const a=state.cuadrantes[y]; for(let i=0;i<12;i++){ const m=a.meses[i]; if(m&&m.asignaciones) Object.keys(m.asignaciones).forEach(k=>{ const as=m.asignaciones[k]; if(as&&typeof as==='object'&&as.turno===old){ as.turno=r.v; as.actualizadoEn=nowISO(); } }); } });
+  Object.keys(state.cuadrantes).forEach(y=>{ const a=state.cuadrantes[y]; for(let i=0;i<12;i++){ const m=a.meses[i]; if(m&&m.asignaciones) Object.keys(m.asignaciones).forEach(k=>{ const as=m.asignaciones[k]; if(typeof as==='string' && as===old){ m.asignaciones[k]=r.v; } else if(as&&typeof as==='object'&&as.turno===old){ as.turno=r.v; as.actualizadoEn=nowISO(); } }); } });
   t.code=r.v; save(state); openTurnos();
 }
 function delTurno(code){
   if(isTurnoBasico(code)){ alert('Los turnos básicos no se pueden eliminar.'); return; }
   // ¿está en uso?
   let enUso=false;
-  Object.keys(state.cuadrantes).forEach(y=>{ const a=state.cuadrantes[y]; for(let i=0;i<12;i++){ const m=a.meses[i]; if(m&&m.asignaciones) Object.keys(m.asignaciones).forEach(k=>{ if(m.asignaciones[k]&&m.asignaciones[k].turno===code) enUso=true; }); } });
+  Object.keys(state.cuadrantes).forEach(y=>{ const a=state.cuadrantes[y]; for(let i=0;i<12;i++){ const m=a.meses[i]; if(m&&m.asignaciones) Object.keys(m.asignaciones).forEach(k=>{ const as=m.asignaciones[k]; const cur = typeof as==='string'?as:(as?as.turno:''); if(cur===code) enUso=true; }); } });
   if(enUso){
     if(!confirm(`El turno ${code} está en uso. ¿Reasignar sus celdas a Libre (L) antes de eliminar? (Cancelar aborta)`)) return;
-    Object.keys(state.cuadrantes).forEach(y=>{ const a=state.cuadrantes[y]; for(let i=0;i<12;i++){ const m=a.meses[i]; if(m&&m.asignaciones) Object.keys(m.asignaciones).forEach(k=>{ if(m.asignaciones[k]&&m.asignaciones[k].turno===code){ m.asignaciones[k].turno='L'; m.asignaciones[k].actualizadoEn=nowISO(); } }); } });
+    Object.keys(state.cuadrantes).forEach(y=>{ const a=state.cuadrantes[y]; for(let i=0;i<12;i++){ const m=a.meses[i]; if(m&&m.asignaciones) Object.keys(m.asignaciones).forEach(k=>{ const as=m.asignaciones[k]; if(typeof as==='string' && as===code){ m.asignaciones[k]='L'; } else if(as&&typeof as==='object'&&as.turno===code){ as.turno='L'; as.actualizadoEn=nowISO(); } }); } });
   } else {
     if(!confirm(`¿Eliminar el turno ${code}?`)) return;
   }
