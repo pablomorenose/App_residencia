@@ -313,6 +313,7 @@ html[data-theme="dark"] .tbl th{ background:#262b35;}
   <button class="btn sm ghost no-print" onclick="openCentro()">Centro</button>
   <button class="btn sm ghost no-print" onclick="openTrabajadores()">Cuidadoras</button>
   <button class="btn sm ghost no-print" onclick="openCadenciaGlobal()">Cadencia</button>
+  <button class="btn sm ghost no-print" onclick="regenerarTodoElAnyo()" title="Borrar y regenerar los 12 meses automáticamente con la cadencia oficial">🔄 Regenerar Año</button>
   <button class="btn sm ghost no-print" onclick="openFestivos()">Festivos</button>
   <button class="btn sm ghost no-print" onclick="openAusencias()">Ausencias</button>
   <button class="btn sm ghost no-print" onclick="exportJSON()">Backup</button>
@@ -324,7 +325,6 @@ html[data-theme="dark"] .tbl th{ background:#262b35;}
 
 <main>
   <div id="saveErrorBanner" style="display:none;background:#fee2e2;border:1px solid #fecaca;color:#b91c1c;padding:8px 14px;font-size:13px;font-weight:600;text-align:center;position:sticky;top:50px;z-index:49;border-radius:0;"></div>
-  </div>
   <div class="viability-warn no-print" id="viabilityWarn" style="display:none;"></div>
 
   <section id="view-anios" class="view active">
@@ -368,7 +368,7 @@ html[data-theme="dark"] .tbl th{ background:#262b35;}
    ================================================================= */
 
 /* ============ CONSTANTES ============ */
-const STORE_KEY = 'cuadrantes_residencia_v4';
+const STORE_KEY = 'cuadrantes_residencia_v5';
 const BACKUP_KEYS = ['cuadrantes_residencia_backup_1'];
 const MESES_NOM = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DIAS_LET = ['D','L','M','X','J','V','S'];
@@ -484,7 +484,7 @@ function plantillasDemo(){
 }
 function defaultState(){
   return {
-    version:4,
+    version:5,
     centro:{ nombre:'Residencia Nuestra Señora de la Paz', localidad:'Sevilla', comunidadAutonoma:'Andalucía', anyoActivo:2026, modoMes:'natural' },
     trabajadores: trabajadoresDemo(),
     roles: defaultRoles(),
@@ -515,11 +515,14 @@ function limpiarEspacioLocalStorage(){
       'cuadrantes_residencia_backup_4',
       'cuadrantes_residencia_backup_5',
       'cuadrantes_pre_import_backup',
+      'cuadrantes_residencia_v4',
+      'cuadrantes_residencia_v3',
       'cuadrantes_residencia_v2',
       'cuadrantes_residencia_v1'
     ];
     keysToRemove.forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
     if(localStorage.getItem(STORE_KEY)){
+      try{ localStorage.removeItem('cuadrantes_residencia_v4'); }catch(e){}
       try{ localStorage.removeItem('cuadrantes_residencia_v3'); }catch(e){}
     }
   }catch(e){}
@@ -529,21 +532,6 @@ function load(){
   try{
     const raw = localStorage.getItem(STORE_KEY);
     if(raw){ const s = JSON.parse(raw); if(s){ migrate(s); return s; } }
-    // intento de migrar desde v3 si no hay v4
-    const rawV3 = localStorage.getItem('cuadrantes_residencia_v3');
-    if(rawV3){
-      try{
-        const s3 = JSON.parse(rawV3);
-        if(s3){
-          migrate(s3);
-          save(s3);
-          try{ localStorage.removeItem('cuadrantes_residencia_v3'); }catch(e){}
-          return s3;
-        }
-      }catch(e){}
-    }
-    const rawV2 = localStorage.getItem('cuadrantes_residencia_v2');
-    if(rawV2){ try{ const s2 = JSON.parse(rawV2); if(s2){ migrate(s2); save(s2); return s2; } }catch(e){} }
   }catch(e){ console.warn('load error',e); }
   const s = defaultState(); save(s); return s;
 }
@@ -580,7 +568,7 @@ function migrate(s){
     !s.config.cadenciaGlobal.secuencia ||
     s.config.cadenciaGlobal.secuencia.length !== 147;
 
-  if (tienePlantillaFicticia || cadenciaNoEsCiclo21 || !s.version || s.version < 4) {
+  if (tienePlantillaFicticia || cadenciaNoEsCiclo21 || !s.version || s.version < 5) {
     s.trabajadores = trabajadoresDemo();
     s.roles = defaultRoles();
     s.tiposTurno = defaultTurnos();
@@ -589,7 +577,7 @@ function migrate(s){
     s.festivos = festivosDemo();
     s.ausencias = [];
     s.cuadrantes = {};
-    s.version = 4;
+    s.version = 5;
   }
   if(!s.festivos) s.festivos = [];
   if(!s.coberturas) s.coberturas = defaultCoberturas();
@@ -1123,14 +1111,23 @@ function renderAnio(){
   document.getElementById('crumb-anio').textContent = curAnyo;
   document.getElementById('hSub').textContent = `· ${state.centro.nombre} · ${curAnyo}`;
   const a = state.cuadrantes[curAnyo]; const c = document.getElementById('months-container');
-  let html='';
+  let html = `<div style="grid-column: 1 / -1; display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding:12px 16px; background:var(--card-bg, #fff); border-radius:8px; border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+    <div>
+      <b style="font-size:15px; color:var(--text, #111);">Cuadrantes Anuales de ${curAnyo}</b>
+      <div style="font-size:12px; color:var(--muted, #666); margin-top:2px;">Cadencia oficial de 21 semanas (Cobertura 7M · 6T · 2N garantizada todos los días)</div>
+    </div>
+    <button class="btn primary sm" onclick="regenerarTodoElAnyo()">🔄 Borrar y Generar Todo el Año Automáticamente</button>
+  </div>`;
   for(let i=0;i<12;i++){
     const m = a.meses[i] || {inicio:null,fin:null};
     const filled = m.inicio && m.fin;
+    const asigsCount = m.asignaciones ? Object.keys(m.asignaciones).length : 0;
     const rango = filled ? `${fmt(parse(m.inicio))} → ${fmt(parse(m.fin))}` : 'Sin definir';
+    const badgeText = asigsCount > 0 ? 'Generado (7M·6T·2N)' : (filled ? 'Definido' : 'Pendiente');
+    const badgeStyle = asigsCount > 0 ? 'background:rgba(16,185,129,0.15);color:#059669;font-weight:600;' : '';
     html += `<div class="month-card ${filled?'filled':''}" onclick="enterMes(${i})">
       <div class="m-name">${MESES_NOM[i]}</div><div class="m-range">${rango}</div>
-      <div class="m-badge">${filled?'Definido':'Pendiente'}</div></div>`;
+      <div class="m-badge" style="${badgeStyle}">${badgeText}</div></div>`;
   }
   c.innerHTML = html;
 }
@@ -1235,9 +1232,11 @@ function validarRangoPeriodo(anyo, idx, inicio, fin){
 /* ---- Vista Mes ---- */
 function enterMes(idx){
   const m = getMes(curAnyo, idx);
-  if(!m.inicio || !m.fin){ defineRangoMes(idx); return; }
-  // Aplicar cadencia global si está activa
-  aplicarCadenciaGlobalEnMes(m);
+  if(!m.inicio || !m.fin){ const sug = rangoSugerido(curAnyo, idx); m.inicio = sug.ini; m.fin = sug.fin; }
+  if(!m.asignaciones || Object.keys(m.asignaciones).length === 0){
+    aplicarCadenciaGlobalEnMes(m);
+    save(state);
+  }
   curMesIdx = idx; showView('mes'); renderMes();
   localStorage.setItem('cuadrantes_last_view', JSON.stringify({anyo:curAnyo, mesIdx:idx}));
 }
@@ -1246,7 +1245,11 @@ function cambiarMes(delta){
   if(n<0){ alert('Ya estás en el primer mes del año.'); return; }
   if(n>11){ alert('Fin del año. Crea o entra en el año siguiente.'); return; }
   const m = getMes(curAnyo, n);
-  if(!m.inicio || !m.fin){ defineRangoMes(n); return; }
+  if(!m.inicio || !m.fin){ const sug = rangoSugerido(curAnyo, n); m.inicio = sug.ini; m.fin = sug.fin; }
+  if(!m.asignaciones || Object.keys(m.asignaciones).length === 0){
+    aplicarCadenciaGlobalEnMes(m);
+    save(state);
+  }
   curMesIdx = n; showView('mes'); renderMes();
   localStorage.setItem('cuadrantes_last_view', JSON.stringify({anyo:curAnyo, mesIdx:n}));
 }
@@ -1343,7 +1346,8 @@ function renderMes(){
     <h2>${MESES_NOM[curMesIdx]} ${curAnyo}</h2>
     <button class="btn sm" onclick="cambiarMes(1)" title="Mes siguiente">›</button>
     <span class="range-pill">${fmt(parse(m.inicio))} → ${fmt(parse(m.fin))}</span>
-    <button class="btn primary sm" onclick="generarMes()">⚙ Generar</button>
+    <button class="btn primary sm" onclick="generarMes()" title="Regenerar este mes con la cadencia de 21 semanas">⚙ Generar este mes</button>
+    <button class="btn sm" onclick="regenerarTodoElAnyo()" title="Borrar y generar los 12 meses automáticamente">🔄 Regenerar año completo</button>
     <button class="btn sm" onclick="revisarReglas()">✔ Revisar</button>
     <button class="btn sm" onclick="clearMes()">🧹 Limpiar</button>
     <button class="btn sm" onclick="defineRangoMes(${curMesIdx})">Editar rango</button>
@@ -2946,18 +2950,73 @@ function generarMes(){
   const cg = state.config.cadenciaGlobal;
   const m = getMes(curAnyo, curMesIdx);
   if(!m.inicio || !m.fin){ const sug = rangoSugerido(curAnyo, curMesIdx); m.inicio = sug.ini; m.fin = sug.fin; }
+
+  // Limpiar asignaciones previas del mes conservando ausencias
+  const conservadas = {};
+  if(m.asignaciones){
+    Object.keys(m.asignaciones).forEach(k => {
+      const as = m.asignaciones[k];
+      if(as && (as.origen === ORIGEN_AUSENCIA || (typeof as === 'object' && ['VAC','BAJ','PER'].includes(as.turno)))){
+        conservadas[k] = as;
+      }
+    });
+  }
+  m.asignaciones = conservadas;
+
   aplicarCadenciaGlobalEnMes(m);
+  proyectarAusenciasEnMes(m);
   save(state);
   renderMes();
   const activas = state.trabajadores.filter(t=>t.activo).length;
   alert(`✅ Cuadrante generado para ${activas} cuidadoras según la cadencia:\n• Cobertura diaria 7M · 6T · 2N garantizada\n• Descansos de 12h respetados\n• Fines de semana libres (1 cada 3-4 semanas) garantizados\n• Ausencias protegidas.`);
 }
+
+function regenerarTodoElAnyo(){
+  const y = curAnyo || state.centro.anyoActivo || 2026;
+  if(!confirm(`¿Borrar y regenerar automáticamente los 12 meses de ${y} con la cadencia oficial de 21 semanas?\n\n• Cobertura diaria 7M · 6T · 2N garantizada en los 365 días\n• Descanso mínimo de 12h\n• Mínimo 1 fin de semana libre al mes para todas las cuidadoras\n• 2 días libres semanales de media`)) return;
+
+  state.trabajadores = trabajadoresDemo();
+  state.roles = defaultRoles();
+  state.tiposTurno = defaultTurnos();
+  state.coberturas = defaultCoberturas();
+  if(!state.config.cadenciaGlobal || !state.config.cadenciaGlobal.secuencia || state.config.cadenciaGlobal.secuencia.length !== 147){
+    state.config.cadenciaGlobal = { activa:true, secuencia:CICLO_21[1].split('-'), fechaAncla:ANCLA_CICLO_21, desfase:7 };
+  }
+
+  if(!state.cuadrantes[y]) state.cuadrantes[y] = { meses: {} };
+  for(let i = 0; i < 12; i++){
+    const sug = rangoSugerido(y, i);
+    state.cuadrantes[y].meses[i] = {
+      inicio: sug.ini,
+      fin: sug.fin,
+      asignaciones: {},
+      notasDia: {},
+      idx: i
+    };
+    aplicarCadenciaGlobalEnMes(state.cuadrantes[y].meses[i]);
+  }
+  proyectarTodasAusencias();
+  save(state);
+  if(curMesIdx !== null && curMesIdx !== undefined){
+    renderMes();
+  } else {
+    curMesIdx = 9;
+    showView('mes');
+    renderMes();
+  }
+  alert(`✅ Se han borrado y regenerado los 12 meses de ${y} automáticamente.\n\n• Todos los meses están completos con cobertura 7M · 6T · 2N.\n• Descansos legales de 12h respetados.\n• Fines de semana y descansos equitativos aplicados.`);
+}
+
 function aplicarCadenciaGlobalATodo(){
   const cg = state.config.cadenciaGlobal;
   if(!cg||!cg.activa||!cg.secuencia.length||!cg.fechaAncla) return;
   Object.keys(state.cuadrantes).forEach(y=>{
     const a=state.cuadrantes[y];
     for(let i=0;i<12;i++){
+      if(!a.meses[i]){
+        const sug = rangoSugerido(Number(y), i);
+        a.meses[i] = { inicio: sug.ini, fin: sug.fin, asignaciones: {}, notasDia: {}, idx: i };
+      }
       const m = a.meses[i];
       if(m){
         if(!m.inicio || !m.fin){ const sug = rangoSugerido(Number(y), i); m.inicio = sug.ini; m.fin = sug.fin; }
@@ -3346,26 +3405,55 @@ state = load();
   // tema
   const tema=localStorage.getItem('cuadrantes_tema'); if(tema){ document.documentElement.setAttribute('data-theme',tema); }
   const tb=document.getElementById('themeBtn'); if(tb) tb.textContent = tema==='dark'?'☀️':'🌙';
-  // año activo existe
-  if(!state.cuadrantes[state.centro.anyoActivo]){
-    state.cuadrantes[state.centro.anyoActivo]={meses:{}};
-    for(let i=0;i<12;i++){
-      const sug = rangoSugerido(state.centro.anyoActivo, i);
-      state.cuadrantes[state.centro.anyoActivo].meses[i]={inicio:sug.ini, fin:sug.fin, asignaciones:{}, notasDia:{}, idx:i};
+  // Asegurar año activo con los 12 meses definidos
+  const anyoAct = state.centro.anyoActivo || 2026;
+  if(!state.cuadrantes[anyoAct]){
+    state.cuadrantes[anyoAct] = { meses:{} };
+  }
+  for(let i=0;i<12;i++){
+    if(!state.cuadrantes[anyoAct].meses[i]){
+      const sug = rangoSugerido(anyoAct, i);
+      state.cuadrantes[anyoAct].meses[i] = {inicio:sug.ini, fin:sug.fin, asignaciones:{}, notasDia:{}, idx:i};
+    }
+    const m = state.cuadrantes[anyoAct].meses[i];
+    if(!m.inicio || !m.fin){
+      const sug = rangoSugerido(anyoAct, i);
+      m.inicio = sug.ini; m.fin = sug.fin;
     }
   }
-  // Verificar si el año activo tiene los cuadrantes aplicados; si no, aplicar la cadencia global a todo el año
-  const yAct = state.cuadrantes[state.centro.anyoActivo];
-  const tieneAsignaciones = yAct && yAct.meses && Object.values(yAct.meses).some(m => m.asignaciones && Object.keys(m.asignaciones).length > 0);
-  if(!tieneAsignaciones){
+
+  // Generar automáticamente la cadencia de 21 semanas si algún mes está vacío
+  let faltaGenerar = false;
+  for(let i=0;i<12;i++){
+    const m = state.cuadrantes[anyoAct].meses[i];
+    if(!m.asignaciones || Object.keys(m.asignaciones).length === 0){
+      faltaGenerar = true;
+      break;
+    }
+  }
+  if(faltaGenerar){
     aplicarCadenciaGlobalATodo();
     save(state);
   }
   proyectarTodasAusencias();
   actualizarSavedTag();
-  const last=localStorage.getItem('cuadrantes_last_view');
-  if(last){ try{ const {anyo,mesIdx}=JSON.parse(last); if(state.cuadrantes[anyo]&&state.cuadrantes[anyo].meses[mesIdx]){ curAnyo=anyo; curMesIdx=mesIdx; showView('mes'); renderMes(); return; } }catch(e){} }
-  renderAnios();
+
+  // Abrir vista: por defecto Octubre 2026 (mes del PDF) o la última vista guardada
+  const last = localStorage.getItem('cuadrantes_last_view');
+  if(last){
+    try{
+      const {anyo,mesIdx} = JSON.parse(last);
+      if(state.cuadrantes[anyo] && state.cuadrantes[anyo].meses[mesIdx]){
+        curAnyo = anyo; curMesIdx = mesIdx;
+        showView('mes'); renderMes();
+        return;
+      }
+    }catch(e){}
+  }
+  curAnyo = anyoAct;
+  curMesIdx = 9; // Octubre
+  showView('mes');
+  renderMes();
 })();
 </script>
 </body>
