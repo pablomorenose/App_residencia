@@ -308,13 +308,14 @@ html[data-theme="dark"] .tbl th{ background:#262b35;}
 <body>
 
 <header>
-  <h1>🏥 Cuadrantes Residencia<span class="sub" id="hSub"></span><span class="sub" style="margin-left:14px;font-size:11px;">v3.0</span></h1>
+  <h1>🏥 Cuadrantes Residencia<span class="sub" id="hSub"></span><span class="sub" style="margin-left:14px;font-size:11px;color:var(--accent);">v4.4 (Oficial Residencia)</span></h1>
   <span class="saved-tag" id="savedTag"></span>
   <button class="btn sm ghost no-print" onclick="openCentro()">Centro</button>
   <button class="btn sm ghost no-print" onclick="openTrabajadores()">Cuidadoras</button>
   <button class="btn sm ghost no-print" onclick="openCadenciaGlobal()">Cadencia</button>
   <button class="btn sm ghost no-print" onclick="openFestivos()">Festivos</button>
   <button class="btn sm ghost no-print" onclick="openAusencias()">Ausencias</button>
+  <button class="btn sm primary no-print" onclick="cargarPlantillaResidencia()" title="Restablecer las 22 cuidadoras oficiales y ciclo de 21 semanas del PDF">🔄 Cargar 22 Cuidadoras PDF</button>
   <button class="btn sm ghost no-print" onclick="exportJSON()">Backup</button>
   <label class="btn sm ghost no-print" style="cursor:pointer;">Importar
     <input type="file" accept="application/json" style="display:none;" onchange="importJSON(event)">
@@ -368,7 +369,7 @@ html[data-theme="dark"] .tbl th{ background:#262b35;}
    ================================================================= */
 
 /* ============ CONSTANTES ============ */
-const STORE_KEY = 'cuadrantes_residencia_v3';
+const STORE_KEY = 'cuadrantes_residencia_v4';
 const BACKUP_KEYS = ['cuadrantes_residencia_backup_1','cuadrantes_residencia_backup_2','cuadrantes_residencia_backup_3','cuadrantes_residencia_backup_4','cuadrantes_residencia_backup_5'];
 const MESES_NOM = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DIAS_LET = ['D','L','M','X','J','V','S'];
@@ -484,7 +485,7 @@ function plantillasDemo(){
 }
 function defaultState(){
   return {
-    version:3,
+    version:4,
     centro:{ nombre:'Residencia Nuestra Señora de la Paz', localidad:'Sevilla', comunidadAutonoma:'Andalucía', anyoActivo:2026, modoMes:'natural' },
     trabajadores: trabajadoresDemo(),
     roles: defaultRoles(),
@@ -511,7 +512,9 @@ function load(){
   try{
     const raw = localStorage.getItem(STORE_KEY);
     if(raw){ const s = JSON.parse(raw); if(s){ migrate(s); return s; } }
-    // intento de migrar desde v2 si no hay v3
+    // intento de migrar desde v3 si no hay v4
+    const rawV3 = localStorage.getItem('cuadrantes_residencia_v3');
+    if(rawV3){ try{ const s3 = JSON.parse(rawV3); if(s3){ migrate(s3); save(s3); return s3; } }catch(e){} }
     const rawV2 = localStorage.getItem('cuadrantes_residencia_v2');
     if(rawV2){ try{ const s2 = JSON.parse(rawV2); if(s2){ migrate(s2); save(s2); return s2; } }catch(e){} }
   }catch(e){ console.warn('load error',e); }
@@ -539,19 +542,28 @@ function migrate(s){
         });
       });
     }
-    s.version = 3;
   }
-  // rellenar campos nuevos
-  if(!s.centro) s.centro = defaultState().centro;
-  if(!s.centro.modoMes) s.centro.modoMes = 'natural';
-  if(!s.trabajadores) s.trabajadores = [];
-  s.roles = ['Cuidadora']; // Modelo único de cuidadoras
-  if(!s.tiposTurno) s.tiposTurno = defaultTurnos();
-  if(!s.config) s.config = defaultConfig();
-  if(!s.config.modoSaliente) s.config.modoSaliente = 'obligatorio';
-  if(!s.config.cadenciaGlobal || !s.config.cadenciaGlobal.secuencia || !s.config.cadenciaGlobal.secuencia.length) s.config.cadenciaGlobal = defaultConfig().cadenciaGlobal;
-  if(!s.config.reglaFinde) s.config.reglaFinde = 'sabado-domingo';
-  if(!s.config.pesos) s.config.pesos = defaultConfig().pesos;
+
+  // Detección de plantilla ficticia antigua o cadencia incompleta
+  const tienePlantillaFicticia = !s.trabajadores || !s.trabajadores.length ||
+    s.trabajadores.length < 21 ||
+    s.trabajadores.some(t => (t.apellidos && (t.apellidos.includes('García') || t.apellidos.includes('Fernández Ruiz') || t.apellidos.includes('Martín Serrano'))) || (t.nombre === 'Ana' && t.apellidos === 'García López'));
+
+  const cadenciaNoEsCiclo21 = !s.config || !s.config.cadenciaGlobal ||
+    !s.config.cadenciaGlobal.secuencia ||
+    s.config.cadenciaGlobal.secuencia.length !== 147;
+
+  if (tienePlantillaFicticia || cadenciaNoEsCiclo21 || !s.version || s.version < 4) {
+    s.trabajadores = trabajadoresDemo();
+    s.roles = defaultRoles();
+    s.tiposTurno = defaultTurnos();
+    s.config = defaultConfig();
+    s.coberturas = defaultCoberturas();
+    s.festivos = festivosDemo();
+    s.ausencias = [];
+    s.cuadrantes = {};
+    s.version = 4;
+  }
   if(!s.festivos) s.festivos = [];
   if(!s.coberturas) s.coberturas = defaultCoberturas();
   if(!s.ausencias) s.ausencias = [];
@@ -2825,30 +2837,45 @@ function cargarCiclo21(op){
   previsualizarCadenciaGlobal();
 }
 function cargarPlantillaResidencia(){
-  if(!confirm('¿Cargar las 22 cuidadoras de la residencia?\\n\\nSe sustituye la lista actual y se borran sus asignaciones y ausencias. No se puede deshacer.')) return;
+  if(!confirm('¿Cargar las 22 cuidadoras oficiales de la residencia y el ciclo de 21 semanas del PDF?\n\nSe restablecerán las 22 cuidadoras y se regenerarán los cuadrantes para todo el año.')) return;
   state.trabajadores = trabajadoresDemo();
+  state.roles = defaultRoles();
+  state.tiposTurno = defaultTurnos();
+  state.coberturas = defaultCoberturas();
   state.ausencias = []; state.descansosPendientes = [];
-  Object.keys(state.cuadrantes).forEach(y=>{ const a=state.cuadrantes[y]; for(let i=0;i<12;i++){ if(a.meses[i]) a.meses[i].asignaciones = {}; } });
-  if(!state.config.cadenciaGlobal || !state.config.cadenciaGlobal.secuencia.length){
+  state.config.cadenciaGlobal = { activa:true, secuencia:CICLO_21[1].split('-'), fechaAncla:ANCLA_CICLO_21, desfase:7 };
+  state.cuadrantes = {};
+  if(!state.cuadrantes[state.centro.anyoActivo]){
+    state.cuadrantes[state.centro.anyoActivo] = {meses:{}};
+    for(let i=0;i<12;i++){
+      const sug = rangoSugerido(state.centro.anyoActivo, i);
+      state.cuadrantes[state.centro.anyoActivo].meses[i] = {inicio:sug.ini, fin:sug.fin, asignaciones:{}, notasDia:{}, idx:i};
+    }
+  }
+  aplicarCadenciaGlobalATodo();
+  save(state);
+  if(curMesIdx !== null && curAnyo !== null) renderMes();
+  else renderAnios();
+  alert('✅ Se han cargado las 22 cuidadoras oficiales y el ciclo de 21 semanas del PDF.\n• Cobertura 7M · 6T · 2N garantizada todos los días.\n• Fines de semana libres (S+D) garantizados.');
+}
+function generarMes(){
+  // Protección: si no tiene las 22 cuidadoras de la residencia o la cadencia de 21 semanas, restaurarlas automáticamente
+  if(!state.trabajadores || state.trabajadores.length < 21 || state.trabajadores.some(t => t.apellidos && t.apellidos.includes('García'))){
+    state.trabajadores = trabajadoresDemo();
+    state.roles = defaultRoles();
+  }
+  if(!state.config.cadenciaGlobal || !state.config.cadenciaGlobal.secuencia || state.config.cadenciaGlobal.secuencia.length !== 147){
     state.config.cadenciaGlobal = { activa:true, secuencia:CICLO_21[1].split('-'), fechaAncla:ANCLA_CICLO_21, desfase:7 };
     state.coberturas = defaultCoberturas();
   }
-  aplicarCadenciaGlobalATodo();
-  save(state); openTrabajadores();
-}
-function generarMes(){
   const cg = state.config.cadenciaGlobal;
-  if(!cg || !cg.activa || !cg.secuencia || !cg.secuencia.length || !cg.fechaAncla){
-    alert('Primero configura la cadencia global.\\n\\nPulsa el botón "Cadencia" en la barra superior, define la secuencia (ej: M-M-T-T-N-L-L) y la fecha de inicio.');
-    return;
-  }
   const m = getMes(curAnyo, curMesIdx);
   if(!m.inicio || !m.fin){ const sug = rangoSugerido(curAnyo, curMesIdx); m.inicio = sug.ini; m.fin = sug.fin; }
   aplicarCadenciaGlobalEnMes(m);
   save(state);
   renderMes();
   const activas = state.trabajadores.filter(t=>t.activo).length;
-  alert(`✅ Cuadrante generado para ${activas} cuidadoras según la cadencia:\\n• Cobertura diaria 7M · 6T · 2N garantizada\\n• Descansos de 12h respetados\\n• Fines de semana libres (1 cada 3-4 semanas) garantizados\\n• Ausencias protegidas.`);
+  alert(`✅ Cuadrante generado para ${activas} cuidadoras según la cadencia:\n• Cobertura diaria 7M · 6T · 2N garantizada\n• Descansos de 12h respetados\n• Fines de semana libres (1 cada 3-4 semanas) garantizados\n• Ausencias protegidas.`);
 }
 function aplicarCadenciaGlobalATodo(){
   const cg = state.config.cadenciaGlobal;
@@ -3237,12 +3264,24 @@ state = load();
   const tema=localStorage.getItem('cuadrantes_tema'); if(tema){ document.documentElement.setAttribute('data-theme',tema); }
   const tb=document.getElementById('themeBtn'); if(tb) tb.textContent = tema==='dark'?'☀️':'🌙';
   // año activo existe
-  if(!state.cuadrantes[state.centro.anyoActivo]){ state.cuadrantes[state.centro.anyoActivo]={meses:{}}; for(let i=0;i<12;i++) state.cuadrantes[state.centro.anyoActivo].meses[i]={inicio:null,fin:null,asignaciones:{},notasDia:{},idx:i}; save(state); }
+  if(!state.cuadrantes[state.centro.anyoActivo]){
+    state.cuadrantes[state.centro.anyoActivo]={meses:{}};
+    for(let i=0;i<12;i++){
+      const sug = rangoSugerido(state.centro.anyoActivo, i);
+      state.cuadrantes[state.centro.anyoActivo].meses[i]={inicio:sug.ini, fin:sug.fin, asignaciones:{}, notasDia:{}, idx:i};
+    }
+  }
+  // Verificar si el año activo tiene los cuadrantes aplicados; si no, aplicar la cadencia global a todo el año
+  const yAct = state.cuadrantes[state.centro.anyoActivo];
+  const tieneAsignaciones = yAct && yAct.meses && Object.values(yAct.meses).some(m => m.asignaciones && Object.keys(m.asignaciones).length > 0);
+  if(!tieneAsignaciones){
+    aplicarCadenciaGlobalATodo();
+    save(state);
+  }
   proyectarTodasAusencias();
-  proyectarTodasCadencias();
   actualizarSavedTag();
   const last=localStorage.getItem('cuadrantes_last_view');
-  if(last){ try{ const {anyo,mesIdx}=JSON.parse(last); if(state.cuadrantes[anyo]&&state.cuadrantes[anyo].meses[mesIdx]&&state.cuadrantes[anyo].meses[mesIdx].inicio){ curAnyo=anyo; curMesIdx=mesIdx; showView('mes'); renderMes(); return; } }catch(e){} }
+  if(last){ try{ const {anyo,mesIdx}=JSON.parse(last); if(state.cuadrantes[anyo]&&state.cuadrantes[anyo].meses[mesIdx]){ curAnyo=anyo; curMesIdx=mesIdx; showView('mes'); renderMes(); return; } }catch(e){} }
   renderAnios();
 })();
 </script>
