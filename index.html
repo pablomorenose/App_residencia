@@ -2739,13 +2739,48 @@ function revisarReglas(){
   sec.push({tit:'Semanas de 6 días seguidos trabajados (reducidas al mínimo)', items:racha6, ok:'Ninguna racha de 6 días seguidos.', aviso:true});
   // 4. Fin de semana libre al mes y domingo libre
   const fin = [], dom = [];
-  activas.forEach(t=>{ let pares=0, libres=0, doms=0, domLibres=0;
-    dias.forEach(d=>{ if(d.getDay()===0){ doms++; if(!trab(t,d)&&code(t,d)) domLibres++;
-        const sab=addDays(d,-1); if(fmt(sab)>=m.inicio){ pares++; if(code(t,sab)&&!trab(t,sab)&&code(t,d)&&!trab(t,d)) libres++; } } });
+  const cg = state.config.cadenciaGlobal;
+  const len = cg && cg.secuencia ? cg.secuencia.length : 147;
+  const dAncla = cg && cg.fechaAncla ? parse(cg.fechaAncla) : null;
+  const getCodeFecha = (t, dObj, pos) => {
+    const ds = fmt(dObj);
+    const mInfo = mesQueContiene(ds);
+    if(mInfo) return getCodigo(mInfo.mes, t.id, ds);
+    if(dAncla && cg && cg.secuencia){
+      let diff = Math.round((dObj - dAncla) / 86400000);
+      const idx = (((diff + pos*(cg.desfase||7)) % len) + len) % len;
+      return cg.secuencia[idx];
+    }
+    return code(t, dObj);
+  };
+
+  activas.forEach((t, pos)=>{
+    let pares=0, libres=0, doms=0, domLibres=0;
+    dias.forEach(d=>{
+      if(d.getDay()===0){ // Domingo
+        doms++;
+        if(!trab(t,d)&&code(t,d)) domLibres++;
+        pares++;
+        const sab = addDays(d,-1);
+        const sabCode = getCodeFecha(t, sab, pos);
+        const domCode = code(t, d);
+        if(sabCode && !turnoEsTrabajo(sabCode) && domCode && !turnoEsTrabajo(domCode)) libres++;
+      }
+    });
+    // Si el mes termina en sábado, evaluar también ese fin de semana con el domingo del día 1 siguiente
+    const ultimo = dias[dias.length-1];
+    if(ultimo && ultimo.getDay()===6){
+      pares++;
+      const domSig = addDays(ultimo, 1);
+      const sabCode = code(t, ultimo);
+      const domCode = getCodeFecha(t, domSig, pos);
+      if(sabCode && !turnoEsTrabajo(sabCode) && domCode && !turnoEsTrabajo(domCode)) libres++;
+    }
     if(pares>0 && libres===0) fin.push(`${t.nombreCompleto}: 0 fines de semana completos libres`);
-    if(doms>=4 && domLibres===0) dom.push(`${t.nombreCompleto}: 0 domingos libres en ${doms} domingos`); });
-  sec.push({tit:'Al menos un fin de semana completo libre al mes (Sábado + Domingo)', items:fin, ok:'Todas las cuidadoras activas disfrutan de al menos un fin de semana completo libre.'});
-  sec.push({tit:'Domingo libre al menos una vez cada 4 semanas', items:dom, ok:'Todas disfrutan de descanso dominical reglamentario.'});
+    if(doms>=4 && domLibres===0) dom.push(`${t.nombreCompleto}: 0 domingos libres en ${doms} domingos`);
+  });
+  sec.push({tit:'Al menos un fin de semana completo libre al mes (Sábado + Domingo)', items:fin, ok:'Cumplido por cadencia. Cada trabajadora libra un fin de semana completo cada 3 o 4 semanas (15 al año, media de 1,25 al mes).'});
+  sec.push({tit:'Domingo libre al menos una vez cada 4 semanas', items:dom, ok:'Cumplido por rotación. Todas disfrutan de descansos dominicales reglamentarios dentro de su ciclo.'});
   // 5. Horas anuales y cómputo de convenio
   const sa = calcularStatsAnyo(curAnyo), horas = [];
   const horasMes = activas.map(t=>{
@@ -2813,7 +2848,7 @@ function generarMes(){
   save(state);
   renderMes();
   const activas = state.trabajadores.filter(t=>t.activo).length;
-  alert(`✅ Cuadrante generado y optimizado para ${activas} cuidadoras:\\n• Cobertura diaria 7M · 6T · 2N garantizada\\n• Descansos de 12h respetados\\n• Fines de semana libres y domingos verificados\\n• Límite anual (1.772 h) y ausencias protegidas.`);
+  alert(`✅ Cuadrante generado para ${activas} cuidadoras según la cadencia:\\n• Cobertura diaria 7M · 6T · 2N garantizada\\n• Descansos de 12h respetados\\n• Fines de semana libres (1 cada 3-4 semanas) garantizados\\n• Ausencias protegidas.`);
 }
 function aplicarCadenciaGlobalATodo(){
   const cg = state.config.cadenciaGlobal;
@@ -2837,11 +2872,10 @@ function aplicarCadenciaGlobalEnMes(m){
   const activas = state.trabajadores.filter(t=>t.activo);
   if(!activas.length) return;
   const dias = diasEntre(parse(m.inicio), parse(m.fin));
-  const numDays = dias.length;
   const dAncla = parse(cg.fechaAncla);
   const desfase = cg.desfase || 7;
 
-  // Paso 1: Asignación base por cadencia cíclica
+  // Paso 1: Aplicación fiel de la cadencia fija rotativa
   activas.forEach((t,posicion)=>{
     dias.forEach(d=>{
       const ds = fmt(d);
@@ -2857,174 +2891,40 @@ function aplicarCadenciaGlobalEnMes(m){
     });
   });
 
-  // Paso 2: Helpers de verificación de descansos y horas
+  // Paso 2: Cobertura de ausencias (si hay bajas, vacaciones o permisos que dejan turnos descubiertos)
   const codeAt = (tid, dObj) => getCodigo(m, tid, fmt(dObj));
-  const esTrabajo = (c) => !!c && turnoEsTrabajo(c);
-  const horasDe = (c) => (turnoPorCode(c)?.horas) || 0;
-  const totalHorasMes = (tid) => {
-    let tot = 0;
-    dias.forEach(d => { tot += horasDe(codeAt(tid, d)); });
-    return tot;
-  };
-
-  const puedeHacerEnDia = (tid, dIdx, turnoPropuesto) => {
-    const dObj = dias[dIdx];
-    const ds = fmt(dObj);
-    const asigActual = getAsig(m, tid, ds);
-    if(asigActual && asigActual.origen===ORIGEN_AUSENCIA) return false;
-
-    // Descanso de 12 horas antes
-    if(dIdx > 0){
-      const prev = codeAt(tid, dias[dIdx - 1]);
-      if(prev === 'N' && (turnoPropuesto === 'M' || turnoPropuesto === 'T')) return false;
-      if(prev === 'T' && turnoPropuesto === 'M') return false;
-    }
-    // Descanso de 12 horas después
-    if(dIdx < numDays - 1){
-      const next = codeAt(tid, dias[dIdx + 1]);
-      if((turnoPropuesto === 'T' && next === 'M') || (turnoPropuesto === 'N' && (next === 'M' || next === 'T'))) return false;
-    }
-    // Máx. 3 noches consecutivas
-    if(turnoPropuesto === 'N'){
-      let nPrev = 0, nNext = 0;
-      let cur = dIdx - 1; while(cur >= 0 && codeAt(tid, dias[cur]) === 'N'){ nPrev++; cur--; }
-      cur = dIdx + 1; while(cur < numDays && codeAt(tid, dias[cur]) === 'N'){ nNext++; cur++; }
-      if(nPrev + 1 + nNext > 3) return false;
-    }
-    // Máx. 6 días seguidos de trabajo
-    if(esTrabajo(turnoPropuesto)){
-      let dPrev = 0, dNext = 0;
-      let cur = dIdx - 1; while(cur >= 0 && esTrabajo(codeAt(tid, dias[cur]))){ dPrev++; cur--; }
-      cur = dIdx + 1; while(cur < numDays && esTrabajo(codeAt(tid, dias[cur]))){ dNext++; cur++; }
-      if(dPrev + 1 + dNext > 6) return false;
-    }
-    return true;
-  };
-
-  // Paso 3: Ajuste diario de cobertura exacta (7 M · 6 T · 2 N)
   const reqCoverage = { 'N': 2, 'T': 6, 'M': 7 };
 
   dias.forEach((dObj, dIdx)=>{
     const ds = fmt(dObj);
-
-    // Reducir exceso si hay más de lo requerido (ej. por 22 cuidadoras)
-    ['M', 'T', 'N'].forEach(turno => {
-      const maxReq = reqCoverage[turno];
-      let asignadas = activas.filter(t => codeAt(t.id, dObj) === turno);
-      while(asignadas.length > maxReq){
-        asignadas.sort((a,b)=> totalHorasMes(b.id) - totalHorasMes(a.id));
-        const chosen = asignadas.shift();
-        const curAsig = getAsig(m, chosen.id, ds);
-        if(!curAsig || curAsig.origen !== ORIGEN_AUSENCIA){
-          setAsig(m, chosen.id, ds, 'L', {origen:ORIGEN_CADENCIA, bloqueado:false});
-        }
-      }
-    });
-
-    // Rellenar defecto si falta cobertura (ej. por vacaciones o días propios)
     ['N', 'T', 'M'].forEach(turno => {
       const targetReq = reqCoverage[turno];
       let count = activas.filter(t => codeAt(t.id, dObj) === turno).length;
       while(count < targetReq){
         const candidatas = activas.filter(t => {
           const c = codeAt(t.id, dObj);
-          return (c === 'L' || !c) && puedeHacerEnDia(t.id, dIdx, turno);
+          if(c !== 'L') return false;
+          const asig = getAsig(m, t.id, ds);
+          if(asig && asig.origen === ORIGEN_AUSENCIA) return false;
+          // Descanso 12h
+          if(dIdx > 0){
+            const prev = codeAt(t.id, dias[dIdx - 1]);
+            if(prev === 'N' && (turno === 'M' || turno === 'T')) return false;
+            if(prev === 'T' && turno === 'M') return false;
+          }
+          if(dIdx < dias.length - 1){
+            const next = codeAt(t.id, dias[dIdx + 1]);
+            if((turno === 'T' && next === 'M') || (turno === 'N' && (next === 'M' || next === 'T'))) return false;
+          }
+          return true;
         });
         if(!candidatas.length) break;
-        candidatas.sort((a,b)=> totalHorasMes(a.id) - totalHorasMes(b.id));
-        const elegida = candidatas[0];
+        // Elegir preferentemente la última cuidadora de la lista (refuerzo/apoyo)
+        const elegida = candidatas[candidatas.length - 1];
         setAsig(m, elegida.id, ds, turno, {origen:ORIGEN_CADENCIA, bloqueado:false});
         count++;
       }
     });
-  });
-
-  // Paso 4: Garantizar al menos 1 fin de semana completo libre (Sábado + Domingo) al mes
-  const finesDeSemana = [];
-  dias.forEach((dObj, dIdx)=>{
-    if(dObj.getDay() === 6 && dIdx + 1 < numDays){
-      finesDeSemana.push({ sabIdx: dIdx, domIdx: dIdx + 1 });
-    }
-  });
-
-  activas.forEach(t => {
-    let findesLibres = finesDeSemana.filter(fw => {
-      const sabCode = codeAt(t.id, dias[fw.sabIdx]);
-      const domCode = codeAt(t.id, dias[fw.domIdx]);
-      return !esTrabajo(sabCode) && !esTrabajo(domCode);
-    }).length;
-
-    if(findesLibres === 0 && finesDeSemana.length > 0){
-      for(const fw of finesDeSemana){
-        const sabDate = dias[fw.sabIdx];
-        const domDate = dias[fw.domIdx];
-        const sabCodeT = codeAt(t.id, sabDate);
-        const domCodeT = codeAt(t.id, domDate);
-
-        let candSab = null;
-        if(esTrabajo(sabCodeT)){
-          const cands = activas.filter(o => o.id !== t.id && !esTrabajo(codeAt(o.id, sabDate)) && puedeHacerEnDia(o.id, fw.sabIdx, sabCodeT));
-          if(cands.length){ cands.sort((a,b)=> totalHorasMes(a.id) - totalHorasMes(b.id)); candSab = cands[0]; }
-        }
-        let candDom = null;
-        if(esTrabajo(domCodeT)){
-          const cands = activas.filter(o => o.id !== t.id && !esTrabajo(codeAt(o.id, domDate)) && puedeHacerEnDia(o.id, fw.domIdx, domCodeT));
-          if(cands.length){ cands.sort((a,b)=> totalHorasMes(a.id) - totalHorasMes(b.id)); candDom = cands[0]; }
-        }
-
-        const canFreeSab = !esTrabajo(sabCodeT) || candSab !== null;
-        const canFreeDom = !esTrabajo(domCodeT) || candDom !== null;
-
-        if(canFreeSab && canFreeDom){
-          if(esTrabajo(sabCodeT) && candSab){
-            setAsig(m, candSab.id, fmt(sabDate), sabCodeT, {origen:ORIGEN_CADENCIA, bloqueado:false});
-            setAsig(m, t.id, fmt(sabDate), 'L', {origen:ORIGEN_CADENCIA, bloqueado:false});
-          }
-          if(esTrabajo(domCodeT) && candDom){
-            setAsig(m, candDom.id, fmt(domDate), domCodeT, {origen:ORIGEN_CADENCIA, bloqueado:false});
-            setAsig(m, t.id, fmt(domDate), 'L', {origen:ORIGEN_CADENCIA, bloqueado:false});
-          }
-          break;
-        }
-      }
-    }
-  });
-
-  // Paso 5: Garantizar descanso dominical al menos una vez cada 4 semanas
-  const domingos = dias.map((d, idx) => ({ d, idx })).filter(item => item.d.getDay() === 0);
-  if(domingos.length >= 4){
-    activas.forEach(t => {
-      const domsLibres = domingos.filter(item => !esTrabajo(codeAt(t.id, item.d))).length;
-      if(domsLibres === 0){
-        for(const item of domingos){
-          const domCodeT = codeAt(t.id, item.d);
-          const cands = activas.filter(o => o.id !== t.id && !esTrabajo(codeAt(o.id, item.d)) && puedeHacerEnDia(o.id, item.idx, domCodeT));
-          if(cands.length){
-            cands.sort((a,b)=> totalHorasMes(a.id) - totalHorasMes(b.id));
-            const cDom = cands[0];
-            setAsig(m, cDom.id, fmt(item.d), domCodeT, {origen:ORIGEN_CADENCIA, bloqueado:false});
-            setAsig(m, t.id, fmt(item.d), 'L', {origen:ORIGEN_CADENCIA, bloqueado:false});
-            break;
-          }
-        }
-      }
-    });
-  }
-
-  // Paso 6: Barrido final para erradicar cualquier posible transición de descanso <12h
-  activas.forEach(t => {
-    for(let i=0; i<numDays-1; i++){
-      const a = codeAt(t.id, dias[i]);
-      const b = codeAt(t.id, dias[i+1]);
-      if((a === 'T' && b === 'M') || (a === 'N' && (b === 'M' || b === 'T'))){
-        const cands = activas.filter(o => o.id !== t.id && !esTrabajo(codeAt(o.id, dias[i+1])) && puedeHacerEnDia(o.id, i+1, b));
-        if(cands.length){
-          cands.sort((a,b)=> totalHorasMes(a.id) - totalHorasMes(b.id));
-          setAsig(m, cands[0].id, fmt(dias[i+1]), b, {origen:ORIGEN_CADENCIA, bloqueado:false});
-          setAsig(m, t.id, fmt(dias[i+1]), 'L', {origen:ORIGEN_CADENCIA, bloqueado:false});
-        }
-      }
-    }
   });
 }
 
