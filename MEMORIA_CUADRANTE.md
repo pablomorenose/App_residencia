@@ -28,12 +28,15 @@ Todos los días del año (sin distinción de festivos, fines de semana o laborab
 * **Días libres regulares:** Cada trabajadora disfruta exactamente de **2,00 días libres a la semana** (42 días libres semanales repartidos exactamente entre las 21 personas).
 * Ninguna trabajadora puede finalizar el año con más o menos días libres reglamentarios que otra dentro del ciclo anual de trabajo (104 días de descanso semanal al año, más vacaciones y permisos).
 
-### 1.4. Ergonomía del Descanso de Fin de Semana (Viernes M $\rightarrow$ Lunes N)
-* En el fin de semana de libranza mensual (Sábado L + Domingo L), la rotación prioriza:
-  * **Viernes previo:** Turno de **Mañana (M)** (salida a las 15:00 h).
-  * **Fin de semana:** Sábado Libre (L) y Domingo Libre (L).
-  * **Lunes de incorporación:** Entrada en turno de **Noche (N)** (entrada a las 22:00 h).
-* **Resultado ergonómico:** Se genera un bloque ininterrumpido de **79 horas consecutivas de descanso** (desde el viernes a las 15:00 h hasta el lunes a las 22:00 h). Dado que los lunes solo existen 2 puestos de Noche, las trabajadoras que no entran de noche se incorporan de Tarde (72h de descanso continuo) o Mañana (65h de descanso continuo), superando siempre con creces el mínimo legal.
+### 1.4. Ergonomía del Descanso de Fin de Semana (Viernes M $\rightarrow$ Lunes N/T) - IMPLANTADO 100% EN LA APP
+En la cadencia oficial de 21 semanas (`CICLO_21`) implantada en la aplicación:
+* **Viernes previo:** El **100% de los fines de semana libres** del año (312 fines de semana en total entre las 21 trabajadoras) van precedidos obligatoriamente de un turno de **Mañana (M)**. La trabajadora finaliza su servicio el viernes a las 15:00 h.
+* **Fin de semana completo:** Sábado Libre (L) y Domingo Libre (L).
+* **Lunes de reincorporación:**
+  * **33,3% de los casos (104 al año):** Entrada en turno de **Noche (N)** el lunes a las 22:00 h, completando un bloque ininterrumpido de **79 horas consecutivas de descanso**. Esto absorbe el 100% de los 2 puestos de noche que existen cada lunes en la residencia. El turno nocturno se agrupa en bloque de 2 noches (`N-N`) para proteger los ciclos circadianos y evitar noches aisladas.
+  * **66,7% de los casos (208 al año):** Entrada en turno de **Tarde (T)** el lunes a las 15:00 h, disfrutando de **72 horas ininterrumpidas de descanso**.
+  * **0 trabajadoras entran de Mañana el lunes** tras su fin de semana libre. Ninguna trabajadora tiene que madrugar a las 08:00 h tras librar el fin de semana.
+* **Descansos interjornada:** 0 transiciones con descanso inferior a 12 horas en los 365 días del año. Se eliminan completamente los cambios perjudiciales ($T \rightarrow M$, $N \rightarrow M$, $N \rightarrow T$).
 
 ---
 
@@ -114,3 +117,26 @@ Para cubrir la dotación exigida (7M + 6T + 2N), se analizan las dos configuraci
 4. Si la dirección decidiera implantar turnos de 7,5h / 7,5h / 9h, estaría legalmente obligada a:
    * Ampliar la plantilla a **24 trabajadoras**, o bien
    * Conceder entre **5 y 6 días libres adicionales de ajuste de convenio ("L+")** por trabajadora y contratar personal correturnos para cubrir los huecos resultantes.
+
+---
+
+## 6. SECUENCIA OFICIAL Y AUDITORÍA DE RESULTADOS (365 DÍAS)
+
+La secuencia implementada en la aplicación (`CICLO_21[1]`) consta de 147 días (21 semanas de lunes a domingo):
+
+```text
+L-L-M-L-M-L-L-N-N-L-M-L-M-M-M-M-T-L-N-N-N-L-T-T-L-M-L-L-T-L-M-M-T-T-T-L-M-T-T-L-M-M-M-M-L-M-T-T-T-T-L-M-M-M-L-L-T-T-L-L-T-T-T-L-M-N-N-L-M-M-M-L-M-M-M-L-L-N-N-L-T-T-T-T-T-T-L-T-N-N-N-L-M-M-T-T-T-T-L-L-M-M-M-L-L-T-T-T-T-L-M-M-M-M-N-N-L-M-M-M-T-T-L-M-L-L-T-L-M-M-L-M-M-M-T-T-L-M-M-M-M-M-L-T-T-T-T
+```
+
+### Resultados de la Auditoría en los 365 Días de 2026:
+* **Cobertura diaria (365/365 días):** 100% exacta (7 Mañanas, 6 Tardes, 2 Noches, 6 Libres en todos los días del año).
+* **Equidad de descanso:** 104 o 105 días libres al año para cada una de las 21 cuidadoras (2,00 días libres/semana).
+* **Fines de semana libres (S+D):** 312 fines de semana libres totales al año (14 a 15 por cuidadora, espaciados cada 3 a 4 semanas).
+* **Viernes previo:** 312 / 312 (100,0%) finalizan en turno de Mañana (M) a las 15:00 h.
+* **Lunes de regreso:**
+  * 104 / 312 (33,3%) entran el lunes en Noche (N) a las 22:00 h (**79 horas de descanso continuo**).
+  * 208 / 312 (66,7%) entran el lunes en Tarde (T) a las 15:00 h (**72 horas de descanso continuo**).
+  * 0 / 312 entran en Mañana (M).
+* **Infracciones de descanso ($\ge 12$h):** **0** en todo el año.
+* **Jornada media individual:** **37,00 horas/semana**.
+
