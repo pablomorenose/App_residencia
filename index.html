@@ -136,16 +136,22 @@ table.cuad thead th .cov-dot.bad{ background:var(--red); }
 table.cuad thead th .cov-dot.warn{ background:var(--amber); }
 
 table.cuad th.namecol{
-  position:sticky; left:0; z-index:3; min-width:140px; text-align:left; padding:3px 8px;
+  position:sticky; left:0; z-index:3; min-width:175px; width:175px; text-align:left; padding:3px 8px;
   font-size:11px; font-weight:600; background:#f1f3f6;
 }
 html[data-theme="dark"] table.cuad th.namecol{ background:#262b35; }
 table.cuad thead th.namecol{ z-index:4; border-top-left-radius:10px; }
-table.cuad td.namecol{ position:sticky; left:0; z-index:1; background:var(--card); padding:4px 9px; font-weight:600; font-size:12px;}
+table.cuad td.namecol{ position:sticky; left:0; z-index:1; background:var(--card); padding:2px 8px; font-weight:600; font-size:12px;}
 html[data-theme="dark"] table.cuad td.namecol{ background:var(--card); }
-table.cuad td.namecol .rol{ font-size:8px; color:var(--accent); font-weight:700; line-height:1; margin-bottom:1px; display:block;}
-table.cuad td.namecol .nm{ font-size:12px; font-weight:600; line-height:1.2; display:block;}
-table.cuad td.namecol .row-tools{ display:flex; gap:2px; margin-top:2px;}
+table.cuad td.namecol .name-slot{ display:flex; align-items:center; gap:5px; width:100%; }
+table.cuad td.namecol .num-badge{ font-size:12px; font-weight:700; color:var(--accent); min-width:20px; font-family:monospace; }
+table.cuad td.namecol .name-edit-input{
+  border:none; border-bottom:1px dashed var(--line); background:transparent;
+  color:var(--ink); font-size:11px; font-weight:500; padding:2px 4px; flex:1; min-width:75px; outline:none;
+}
+table.cuad td.namecol .name-edit-input:focus{ border-bottom:1px solid var(--accent); background:rgba(0,0,0,0.03); }
+table.cuad td.namecol .name-line-print{ display:none; }
+table.cuad td.namecol .row-tools{ display:flex; gap:2px; margin-left:auto; }
 table.cuad td.namecol .row-tools button{ font-size:9px; padding:1px 4px; border-radius:4px; background:transparent; color:var(--muted); border:1px solid var(--line);}
 table.cuad td.namecol .row-tools button:hover{ background:#eef1f5; color:var(--ink);}
 table.cuad td.cell{ text-align:center; vertical-align:middle; padding:0; height:32px; position:relative;}
@@ -294,9 +300,13 @@ html[data-theme="dark"] .tbl th{ background:#262b35;}
     -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   table.cuad thead th .th-btn{ cursor:default; }
   table.cuad thead th .dnum{ font-size:10px; } table.cuad thead th .dlet{ font-size:8px; }
-  table.cuad th.namecol, table.cuad td.namecol{ position:static; width:80px; min-width:80px;
-    text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:2px 4px 2px 6px; font-size:8px; line-height:1.2;
+  table.cuad th.namecol, table.cuad td.namecol{ position:static; width:135px; min-width:135px;
+    text-align:left; white-space:nowrap; overflow:hidden; padding:2px 4px 2px 6px; font-size:8px; line-height:1.2;
     background:#f1f3f6 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  table.cuad td.namecol .name-slot{ display:flex; align-items:center; gap:4px; width:100%; }
+  table.cuad td.namecol .num-badge{ font-size:9px; font-weight:700; color:#000; min-width:16px; }
+  table.cuad td.namecol .name-edit-input{ display:none !important; }
+  table.cuad td.namecol .name-line-print{ display:inline-block !important; font-size:8px; color:#111; min-width:98px; border-bottom:1px solid #777; height:12px; }
   table.cuad td.cell{ height:20px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   table.cuad td.cell.filled, table.cuad td.cell.sun, table.cuad td.cell.fest,
   table.cuad td.cell[style], .dot, .stat, .tag{
@@ -368,7 +378,7 @@ html[data-theme="dark"] .tbl th{ background:#262b35;}
    ================================================================= */
 
 /* ============ CONSTANTES ============ */
-const STORE_KEY = 'cuadrantes_residencia_v6';
+const STORE_KEY = 'cuadrantes_residencia_v7';
 const BACKUP_KEYS = ['cuadrantes_residencia_backup_1'];
 const MESES_NOM = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DIAS_LET = ['D','L','M','X','J','V','S'];
@@ -454,17 +464,18 @@ function festivosDemo(){
   out.push({fecha:'2026-10-15', nombre:'Fiestas del municipio (ej.)', tipo:'local'});
   return out;
 }
-// Plantilla de la residencia: 21 cuidadoras genéricas para el ciclo rotativo de 21 semanas
+// Plantilla de la residencia: 21 cuidadoras identificadas solo por número (01 a 21)
 function trabajadoresDemo(){
   const out = [];
   for(let i = 1; i <= 21; i++){
     const pad = String(i).padStart(2, '0');
-    const nom = `Cuidadora ${pad}`;
     out.push({
       id: 't' + i,
-      nombre: nom,
+      numero: pad,
+      nombre: pad,
       apellidos: '',
-      nombreCompleto: nom,
+      nombreCompleto: pad,
+      nombreReal: '',
       activo: true,
       rol: 'Cuidadora',
       jornada: { horasAnualesObjetivo: 1772, horasMensualesObjetivo: null, horasSemanalesObjetivo: 37, porcentajeJornada: 100 },
@@ -486,7 +497,7 @@ function plantillasDemo(){
 }
 function defaultState(){
   return {
-    version:6,
+    version:7,
     centro:{ nombre:'Residencia Nuestra Señora de la Paz', localidad:'Sevilla', comunidadAutonoma:'Andalucía', anyoActivo:2026, modoMes:'natural' },
     trabajadores: trabajadoresDemo(),
     roles: defaultRoles(),
@@ -517,6 +528,7 @@ function limpiarEspacioLocalStorage(){
       'cuadrantes_residencia_backup_4',
       'cuadrantes_residencia_backup_5',
       'cuadrantes_pre_import_backup',
+      'cuadrantes_residencia_v6',
       'cuadrantes_residencia_v5',
       'cuadrantes_residencia_v4',
       'cuadrantes_residencia_v3',
@@ -525,6 +537,7 @@ function limpiarEspacioLocalStorage(){
     ];
     keysToRemove.forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
     if(localStorage.getItem(STORE_KEY)){
+      try{ localStorage.removeItem('cuadrantes_residencia_v6'); }catch(e){}
       try{ localStorage.removeItem('cuadrantes_residencia_v5'); }catch(e){}
       try{ localStorage.removeItem('cuadrantes_residencia_v4'); }catch(e){}
       try{ localStorage.removeItem('cuadrantes_residencia_v3'); }catch(e){}
@@ -563,15 +576,15 @@ function migrate(s){
     }
   }
 
-  // Detección de plantilla ficticia antigua o con nombres reales (migrar a 21 cuidadoras genéricas)
+  // Detección de plantilla ficticia antigua o con nombres reales/texto 'Cuidadora' (migrar a 01..21)
   const tienePlantillaAntigua = !s.trabajadores || s.trabajadores.length !== 21 ||
-    s.trabajadores.some(t => !t.nombre || !t.nombre.startsWith('Cuidadora '));
+    s.trabajadores.some(t => !t.numero || (t.nombre && t.nombre.startsWith('Cuidadora ')));
 
   const cadenciaNoEsCiclo21 = !s.config || !s.config.cadenciaGlobal ||
     !s.config.cadenciaGlobal.secuencia ||
     s.config.cadenciaGlobal.secuencia.length !== 147;
 
-  if (tienePlantillaAntigua || cadenciaNoEsCiclo21 || !s.version || s.version < 6) {
+  if (tienePlantillaAntigua || cadenciaNoEsCiclo21 || !s.version || s.version < 7) {
     s.trabajadores = trabajadoresDemo();
     s.roles = defaultRoles();
     s.tiposTurno = defaultTurnos();
@@ -580,7 +593,7 @@ function migrate(s){
     s.festivos = festivosDemo();
     s.ausencias = [];
     s.cuadrantes = {};
-    s.version = 6;
+    s.version = 7;
   }
   if(!s.festivos) s.festivos = [];
   if(!s.coberturas) s.coberturas = defaultCoberturas();
@@ -1280,7 +1293,7 @@ function renderMes(){
 
   // CABECERA
   const thead = document.createElement('thead'); const headRow = document.createElement('tr');
-  const th0 = document.createElement('th'); th0.className='namecol'; th0.textContent='Cuidadora'; headRow.appendChild(th0);
+  const th0 = document.createElement('th'); th0.className='namecol'; th0.textContent='Nº · Nombre'; headRow.appendChild(th0);
   dias.forEach(d=>{
     const dn=d.getDate(), dl=DIAS_LET[d.getDay()], isSun=d.getDay()===0;
     const ds=fmt(d);
@@ -1306,11 +1319,17 @@ function renderMes(){
   trabajadores.forEach(t=>{
     const tr = document.createElement('tr');
     const tdN = document.createElement('td'); tdN.className='namecol';
-    tdN.innerHTML = `<span class="nm">${escaparHTML(t.nombreCompleto||t.nombre||'')}</span>
-      <div class="row-tools">
+    const num = String(t.numero || t.nombre || '').padStart(2, '0');
+    const real = t.nombreReal || '';
+    tdN.innerHTML = `<div class="name-slot">
+      <span class="num-badge">${num}</span>
+      <input type="text" class="name-edit-input no-print" value="${escaparAttr(real)}" placeholder="Nombre..." onchange="actualizarNombreReal('${t.id}', this.value)" title="Escribe aquí el nombre o déjalo vacío para escribirlo a mano en papel">
+      <span class="name-line-print only-print">${escaparHTML(real) || '_____________________'}</span>
+      <div class="row-tools no-print">
         <button onclick="copiarFila('${t.id}')" title="Copiar fila">⧉</button>
         <button onclick="pegarFila('${t.id}')" title="Pegar fila">📋</button>
-      </div>`;
+      </div>
+    </div>`;
     tr.appendChild(tdN);
     dias.forEach(d=>{
       const ds=fmt(d); const td = document.createElement('td');
@@ -1375,6 +1394,15 @@ function renderMes(){
   cont.appendChild(layout);
   habilitarAtajos();
   habilitarSeleccionMultiple();
+}
+
+function actualizarNombreReal(tid, val){
+  const t = state.trabajadores.find(x => x.id === tid);
+  if(!t) return;
+  t.nombreReal = (val || '').trim();
+  const num = String(t.numero || t.nombre).padStart(2, '0');
+  t.nombreCompleto = num + (t.nombreReal ? ' · ' + t.nombreReal : '');
+  save(state);
 }
 
 /* render puntual de una celda (evita reconstruir toda la tabla) */
