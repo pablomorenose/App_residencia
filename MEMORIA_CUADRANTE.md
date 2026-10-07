@@ -28,15 +28,42 @@ Todos los días del año (sin distinción de festivos, fines de semana o laborab
 * **Días libres regulares:** Cada trabajadora disfruta exactamente de **2,00 días libres a la semana** (42 días libres semanales repartidos exactamente entre las 21 personas).
 * Ninguna trabajadora puede finalizar el año con más o menos días libres reglamentarios que otra dentro del ciclo anual de trabajo (104 días de descanso semanal al año, más vacaciones y permisos).
 
-### 1.4. Ergonomía del Descanso de Fin de Semana (Viernes M $\rightarrow$ Lunes N/T) - IMPLANTADO 100% EN LA APP
-En la cadencia oficial de 21 semanas (`CICLO_21`) implantada en la aplicación:
-* **Viernes previo:** El **100% de los fines de semana libres** del año (312 fines de semana en total entre las 21 trabajadoras) van precedidos obligatoriamente de un turno de **Mañana (M)**. La trabajadora finaliza su servicio el viernes a las 15:00 h.
-* **Fin de semana completo:** Sábado Libre (L) y Domingo Libre (L).
-* **Lunes de reincorporación:**
-  * **33,3% de los casos (104 al año):** Entrada en turno de **Noche (N)** el lunes a las 22:00 h, completando un bloque ininterrumpido de **79 horas consecutivas de descanso**. Esto absorbe el 100% de los 2 puestos de noche que existen cada lunes en la residencia. El turno nocturno se agrupa en bloque de 2 noches (`N-N`) para proteger los ciclos circadianos y evitar noches aisladas.
-  * **66,7% de los casos (208 al año):** Entrada en turno de **Tarde (T)** el lunes a las 15:00 h, disfrutando de **72 horas ininterrumpidas de descanso**.
-  * **0 trabajadoras entran de Mañana el lunes** tras su fin de semana libre. Ninguna trabajadora tiene que madrugar a las 08:00 h tras librar el fin de semana.
-* **Descansos interjornada:** 0 transiciones con descanso inferior a 12 horas en los 365 días del año. Se eliminan completamente los cambios perjudiciales ($T \rightarrow M$, $N \rightarrow M$, $N \rightarrow T$).
+### 1.4. Protocolo de Ergonomía y Descansos: Implementación Detallada (Puntos 1 al 4)
+
+El motor algorítmico y la secuencia oficial de 21 semanas (`CICLO_21`) incorporan de forma estricta el protocolo ergonómico de prolongación del descanso, estructurado en 4 pilares:
+
+#### 1. Viernes Previo: Turno de Mañana Obligatorio (M)
+* **Finalización anticipada de la semana:** El **100% de los fines de semana libres del año** (312 fines de semana en total entre las 21 trabajadoras) van precedidos obligatoriamente de un turno de **Mañana (M)**.
+* **Cierre de jornada:** La trabajadora finaliza su servicio el viernes a las **15:00 h**, disponiendo de toda la tarde del viernes libre para iniciar el período de descanso sin fatiga previa.
+
+#### 2. Fin de Semana Completo: Sábado Libre (L) y Domingo Libre (L)
+* **Periodicidad y equidad estricta:** Cada cuidadora disfruta exactamente de entre **14 y 15 fines de semana completos libres al año** (distribuidos de forma homogénea cada 3 o 4 semanas), superando ampliamente la exigencia del convenio colectivo, que marca un mínimo de 1 fin de semana libre al mes.
+* **Descanso íntegro de 48 horas de calendario:** Al haber salido el viernes a las 15:00 h, ni el sábado ni el domingo se ven alterados por "salientes de noche" matutinos. El descanso durante el sábado y el domingo es 100% limpio, efectivo y sin cargas horarias.
+* **Reparto equitativo:** Cada fin de semana del año libran simultáneamente **6 trabajadoras**, asegurando la cobertura del centro (15 en activo) y evitando agravios comparativos o privilegios en la plantilla.
+
+#### 3. Lunes de Reincorporación Progresiva: Protección Circadiana (33,3% Noche · 66,7% Tarde · 0% Mañana)
+Para evitar el impacto negativo del regreso al trabajo tras el fin de semana, el cuadrante distribuye a las 6 trabajadoras que se reincorporan el lunes entre los turnos más tardíos disponibles:
+
+* **Incorporación en turno de Noche (N) a las 22:00 h (33,3% de los casos / 104 veces al año):**
+  * **Descanso récord de 79 horas continuas:** La trabajadora descansa de forma ininterrumpida desde las 15:00 h del viernes hasta las 22:00 h del lunes (más de 3 días completos naturales).
+  * **Cobertura total de plazas nocturnas:** Los lunes el centro necesita exactamente 2 puestos de noche; el sistema reserva estas 2 plazas al 100% para personal procedente del fin de semana libre ($2 / 6 = 33,33\%$).
+  * **Bloque circadiano doble (`N-N`):** Para proteger la salud laboral y evitar desajustes biológicos, la noche del lunes se encadena obligatoriamente con la noche del martes. Se prohíben taxativamente las "noches aisladas" o sueltas de 1 solo día, favoreciendo la estabilización del ciclo vigilia-sueño.
+* **Incorporación en turno de Tarde (T) a las 15:00 h (66,7% de los casos / 208 veces al año):**
+  * **Descanso de 72 horas continuas:** La trabajadora descansa ininterrumpidamente desde las 15:00 h del viernes hasta las 15:00 h del lunes (3 días exactos de 24 horas).
+  * **Mañana del lunes libre:** Las 4 trabajadoras restantes ($4 / 6 = 66,67\%$) disponen de toda la mañana del lunes libre antes de incorporarse a su jornada.
+* **Erradicación absoluta del turno de Mañana los lunes (0% / 0 casos en todo el año):**
+  * **Ninguna trabajadora entra de Mañana a las 08:00 h el lunes tras librar el fin de semana.** Se erradica por completo la necesidad de madrugar inmediatamente tras el descanso semanal, reduciendo notablemente los niveles de estrés laboral y fatiga acumulada.
+
+#### 4. Blindaje de Descansos Interjornada y Eliminación de Secuencias Incompatibles ($\ge 12$ Horas)
+En estricta aplicación del artículo 37.1 del Estatuto de los Trabajadores y de la Ley de Prevención de Riesgos Laborales, el diseño del cuadrante garantiza un descanso ininterrumpido mínimo de 12 horas entre el fin de una jornada y el inicio de la siguiente:
+
+* **Eliminación total de Tarde $\rightarrow$ Mañana ($T \rightarrow M$):** El turno de tarde finaliza a las 22:00 h y el de mañana comienza a las 08:00 h. Esta combinación supondría únicamente 10 horas de descanso (infracción laboral grave). En el cuadrante generado existen **0 transiciones T $\rightarrow$ M**.
+* **Eliminación total de Noche $\rightarrow$ Mañana ($N \rightarrow M$):** La noche finaliza a las 08:00 h y la mañana comienza a las 08:00 h (0 horas de descanso). Existen **0 transiciones N $\rightarrow$ M**.
+* **Eliminación total de Noche $\rightarrow$ Tarde ($N \rightarrow T$):** La noche finaliza a las 08:00 h y la tarde comienza a las 15:00 h (7 horas de descanso). Existen **0 transiciones N $\rightarrow$ T**.
+* **Pauta obligatoria tras turno de Noche:** Al salir de noche a las 08:00 h, la trabajadora solo puede realizar:
+  * Otra noche consecutiva (entrada a las 22:00 h = **14 horas de descanso**, superando las 12h legales).
+  * Saliente y pase a descanso reglamentario (`L`), acumulando como mínimo **48 horas ininterrumpidas de descanso** antes de reiniciar ciclo.
+* **Balance de infracciones en los 365 días del año:** **0 infracciones registradas**. Todas las transiciones del año respetan o superan holgadamente el marco legal.
 
 ---
 
