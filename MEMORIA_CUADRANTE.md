@@ -1,7 +1,7 @@
-# MEMORIA TÉCNICA, JURÍDICA Y OPERATIVA: CUADRANTE RESIDENCIA 2026
+# MEMORIA TÉCNICA, JURÍDICA Y OPERATIVA: CUADRANTE RESIDENCIA 2027
 
 **Documento de referencia técnica y normativa para la planificación anual de turnos.**  
-**Base de datos / Aplicación:** `App_residencia` (21 trabajadoras, año bisiesto/estándar 365 días).
+**Base de datos / Aplicación:** `App_residencia` (21 trabajadoras, año natural 2027, 365 días).
 
 ---
 
@@ -64,6 +64,19 @@ En estricta aplicación del artículo 37.1 del Estatuto de los Trabajadores y de
   * Otra noche consecutiva (entrada a las 22:00 h = **14 horas de descanso**, superando las 12h legales).
   * Saliente y pase a descanso reglamentario (`L`), acumulando como mínimo **48 horas ininterrumpidas de descanso** antes de reiniciar ciclo.
 * **Balance de infracciones en los 365 días del año:** **0 infracciones registradas**. Todas las transiciones del año respetan o superan holgadamente el marco legal.
+
+### 1.5. Agrupación de Días Libres en Bloques Prolongados (3L y 4L)
+Con el objetivo de erradicar los descansos fragmentados de un solo día libre aislado (los cuales no permiten una recuperación física completa), la secuencia anual reordena los descansos en bloques agrupados:
+
+* **Bloque de 4 Libres Consecutivos (`L-L-L-L`):**
+  * Descanso continuado de **96 horas naturales** (4 días completos de descanso) tras completar un ciclo de trabajo concentrado.
+  * Funciona como un "macropuente" vacacional recurrente dentro de la propia rueda de trabajo ordinaria.
+* **Bloques de 3 Libres Consecutivos (`L-L-L`):**
+  * Descanso continuado de **72 horas naturales** ubicado estratégicamente tras la finalización de los bloques de noches (`N-N-L-L-L`).
+  * Facilita la adaptación del reloj biológico y la restauración total del sueño.
+* **Bloques de 2 Libres Consecutivos (`L-L`):**
+  * 14 bloques de 2 días de descanso semanal repartidos equilibradamente a lo largo del ciclo.
+* **Erradicación de libres fragmentados:** Los días libres aislados (de 1 solo día) se reducen drásticamente de los 16 que tenía el patrón inicial a únicamente 4 en las 21 semanas, maximizando la calidad de vida y conciliación de la plantilla.
 
 ---
 
@@ -147,23 +160,22 @@ Para cubrir la dotación exigida (7M + 6T + 2N), se analizan las dos configuraci
 
 ---
 
-## 6. SECUENCIA OFICIAL Y AUDITORÍA DE RESULTADOS (365 DÍAS)
+## 6. SECUENCIA OFICIAL Y AUDITORÍA DE RESULTADOS (365 DÍAS - AÑO 2027)
 
-La secuencia implementada en la aplicación (`CICLO_21[1]`) consta de 147 días (21 semanas de lunes a domingo):
+La secuencia implementada en la aplicación (`CICLO_21[1]`) consta de 147 días (21 semanas de lunes a domingo, fecha ancla `2027-01-04`):
 
 ```text
-L-L-M-L-M-L-L-N-N-L-M-L-M-M-M-M-T-L-N-N-N-L-T-T-L-M-L-L-T-L-M-M-T-T-T-L-M-T-T-L-M-M-M-M-L-M-T-T-T-T-L-M-M-M-L-L-T-T-L-L-T-T-T-L-M-N-N-L-M-M-M-L-M-M-M-L-L-N-N-L-T-T-T-T-T-T-L-T-N-N-N-L-M-M-T-T-T-T-L-L-M-M-M-L-L-T-T-T-T-L-M-M-M-M-N-N-L-M-M-M-T-T-L-M-L-L-T-L-M-M-L-M-M-M-T-T-L-M-M-M-M-M-L-T-T-T-T
+M-T-L-L-T-T-T-T-T-T-L-L-M-M-M-M-M-T-L-M-M-M-M-N-N-L-L-L-M-T-T-T-T-T-L-L-M-M-M-T-T-T-L-L-M-T-N-N-N-L-N-N-L-M-M-M-M-M-T-L-L-T-T-N-N-L-M-M-L-L-M-M-T-N-N-L-L-L-M-M-M-M-M-M-L-L-M-T-T-N-N-N-L-L-M-M-L-L-T-T-T-T-L-L-M-M-M-M-M-M-L-L-L-L-M-M-M-M-T-T-L-L-M-T-T-T-T-L-L-T-T-T-T-T-T-L-L-M-M-M-T-T-T-L-L-M-M
 ```
 
-### Resultados de la Auditoría en los 365 Días de 2026:
-* **Cobertura diaria (365/365 días):** 100% exacta (7 Mañanas, 6 Tardes, 2 Noches, 6 Libres en todos los días del año).
-* **Equidad de descanso:** 104 o 105 días libres al año para cada una de las 21 cuidadoras (2,00 días libres/semana).
-* **Fines de semana libres (S+D):** 312 fines de semana libres totales al año (14 a 15 por cuidadora, espaciados cada 3 a 4 semanas).
-* **Viernes previo:** 312 / 312 (100,0%) finalizan en turno de Mañana (M) a las 15:00 h.
-* **Lunes de regreso:**
-  * 104 / 312 (33,3%) entran el lunes en Noche (N) a las 22:00 h (**79 horas de descanso continuo**).
-  * 208 / 312 (66,7%) entran el lunes en Tarde (T) a las 15:00 h (**72 horas de descanso continuo**).
-  * 0 / 312 entran en Mañana (M).
-* **Infracciones de descanso ($\ge 12$h):** **0** en todo el año.
-* **Jornada media individual:** **37,00 horas/semana**.
+### Resultados de la Auditoría en los 365 Días de 2027:
+* **Cobertura diaria (365/365 días):** 100% exacta (7 Mañanas, 6 Tardes, 2 Noches, 6 Libres en todos y cada uno de los días de 2027).
+* **Estructura de descansos en el ciclo:**
+  * **1 bloque de 4 Libres (`L-L-L-L`):** 96 horas continuas de descanso tras 6 mañanas.
+  * **2 bloques de 3 Libres (`L-L-L`):** 72 horas continuas de recuperación tras noches (`N-N-L-L-L`).
+  * **14 bloques de 2 Libres (`L-L`):** Descansos regulares y fines de semana.
+  * **Solo 4 días de libre aislado** en 147 días (frente a los 16 del patrón inicial).
+* **Equidad de descanso:** Exactamente **2,00 días libres/semana** de media (102 a 107 días libres brutos al año por trabajadora según el punto de entrada).
+* **Infracciones de descanso ($\ge 12$h):** **0 infracciones** en los 365 días de 2027.
+* **Jornada media individual:** **37,00 horas/semana** (1.743 horas anuales netas tras vacaciones y permisos, dentro del tope legal de 1.772 h).
 
