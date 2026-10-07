@@ -368,7 +368,7 @@ html[data-theme="dark"] .tbl th{ background:#262b35;}
    ================================================================= */
 
 /* ============ CONSTANTES ============ */
-const STORE_KEY = 'cuadrantes_residencia_v5';
+const STORE_KEY = 'cuadrantes_residencia_v6';
 const BACKUP_KEYS = ['cuadrantes_residencia_backup_1'];
 const MESES_NOM = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DIAS_LET = ['D','L','M','X','J','V','S'];
@@ -454,24 +454,26 @@ function festivosDemo(){
   out.push({fecha:'2026-10-15', nombre:'Fiestas del municipio (ej.)', tipo:'local'});
   return out;
 }
-// Auxiliares de la residencia: 22 cuidadoras reales (todas activas con las mismas funciones)
+// Plantilla de la residencia: 21 cuidadoras genéricas para el ciclo rotativo de 21 semanas
 function trabajadoresDemo(){
-  const base = [
-    ['Inma (ETERI)','Solaguren Iñigue'],['Caridad','Domenech'],['Lucia','Olmos'],
-    ['Amparo','Romero'],['Patricia (LUCILA)','Botet Boix'],['Andrea','Da Concienciao'],
-    ['Marquesa','Fine'],['Maria Victoria','Asumu'],['Carla (RABAB)','Pechuan Chulvi'],
-    ['Raquel','Fernandez'],['Jennifer (BRYAN)','Capilla'],['Katherine','Lissete'],
-    ['Yuranny','Carrera'],['Lorena (DAYANA)','Gómez Lorite'],['Rozainna (JEREMY)','Simoes'],
-    ['Carmen (ANA CANO)','Aguilar'],['Ana Rosa','Ponce'],['Vivian','Concepción'],
-    ['Mar (EVA M / ANA R. AVI)','Polo'],['Nicolasa','Perez'],['Eva','Sánchez Casinos'],
-    ['Olimpia','Gimenez Míguez'],
-  ];
-  return base.map((b,i)=>({
-    id:'t'+(i+1), nombre:b[0], apellidos:b[1], nombreCompleto:b[1]+', '+b[0], activo:true, rol:'Cuidadora',
-    jornada:{ horasAnualesObjetivo:1772, horasMensualesObjetivo:null, horasSemanalesObjetivo:null, porcentajeJornada:100 },
-    preferencias:{ turnosPermitidos:['M','T','N'], soloTurnos:false, soloTurnosTipo:'', noTrabajaNoches:false, noTrabajaFinesSemana:false, maxDiasConsecutivos:null, minDescansosTrasNoche:null, diasNoDisponibles:[], restriccionesSemanales:[] },
-    saldoInicialHoras:0, observaciones:''
-  }));
+  const out = [];
+  for(let i = 1; i <= 21; i++){
+    const pad = String(i).padStart(2, '0');
+    const nom = `Cuidadora ${pad}`;
+    out.push({
+      id: 't' + i,
+      nombre: nom,
+      apellidos: '',
+      nombreCompleto: nom,
+      activo: true,
+      rol: 'Cuidadora',
+      jornada: { horasAnualesObjetivo: 1772, horasMensualesObjetivo: null, horasSemanalesObjetivo: 37, porcentajeJornada: 100 },
+      preferencias: { turnosPermitidos: ['M','T','N'], soloTurnos: false, soloTurnosTipo: '', noTrabajaNoches: false, noTrabajaFinesSemana: false, maxDiasConsecutivos: null, minDescansosTrasNoche: null, diasNoDisponibles: [], restriccionesSemanales: [] },
+      saldoInicialHoras: 0,
+      observaciones: ''
+    });
+  }
+  return out;
 }
 function plantillasDemo(){
   return [
@@ -484,7 +486,7 @@ function plantillasDemo(){
 }
 function defaultState(){
   return {
-    version:5,
+    version:6,
     centro:{ nombre:'Residencia Nuestra Señora de la Paz', localidad:'Sevilla', comunidadAutonoma:'Andalucía', anyoActivo:2026, modoMes:'natural' },
     trabajadores: trabajadoresDemo(),
     roles: defaultRoles(),
@@ -515,6 +517,7 @@ function limpiarEspacioLocalStorage(){
       'cuadrantes_residencia_backup_4',
       'cuadrantes_residencia_backup_5',
       'cuadrantes_pre_import_backup',
+      'cuadrantes_residencia_v5',
       'cuadrantes_residencia_v4',
       'cuadrantes_residencia_v3',
       'cuadrantes_residencia_v2',
@@ -522,6 +525,7 @@ function limpiarEspacioLocalStorage(){
     ];
     keysToRemove.forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
     if(localStorage.getItem(STORE_KEY)){
+      try{ localStorage.removeItem('cuadrantes_residencia_v5'); }catch(e){}
       try{ localStorage.removeItem('cuadrantes_residencia_v4'); }catch(e){}
       try{ localStorage.removeItem('cuadrantes_residencia_v3'); }catch(e){}
     }
@@ -559,16 +563,15 @@ function migrate(s){
     }
   }
 
-  // Detección de plantilla ficticia antigua o cadencia incompleta
-  const tienePlantillaFicticia = !s.trabajadores || !s.trabajadores.length ||
-    s.trabajadores.length < 21 ||
-    s.trabajadores.some(t => (t.apellidos && (t.apellidos.includes('García') || t.apellidos.includes('Fernández Ruiz') || t.apellidos.includes('Martín Serrano'))) || (t.nombre === 'Ana' && t.apellidos === 'García López'));
+  // Detección de plantilla ficticia antigua o con nombres reales (migrar a 21 cuidadoras genéricas)
+  const tienePlantillaAntigua = !s.trabajadores || s.trabajadores.length !== 21 ||
+    s.trabajadores.some(t => !t.nombre || !t.nombre.startsWith('Cuidadora '));
 
   const cadenciaNoEsCiclo21 = !s.config || !s.config.cadenciaGlobal ||
     !s.config.cadenciaGlobal.secuencia ||
     s.config.cadenciaGlobal.secuencia.length !== 147;
 
-  if (tienePlantillaFicticia || cadenciaNoEsCiclo21 || !s.version || s.version < 5) {
+  if (tienePlantillaAntigua || cadenciaNoEsCiclo21 || !s.version || s.version < 6) {
     s.trabajadores = trabajadoresDemo();
     s.roles = defaultRoles();
     s.tiposTurno = defaultTurnos();
@@ -577,7 +580,7 @@ function migrate(s){
     s.festivos = festivosDemo();
     s.ausencias = [];
     s.cuadrantes = {};
-    s.version = 5;
+    s.version = 6;
   }
   if(!s.festivos) s.festivos = [];
   if(!s.coberturas) s.coberturas = defaultCoberturas();
@@ -2916,7 +2919,7 @@ function cargarCiclo21(op){
   previsualizarCadenciaGlobal();
 }
 function cargarPlantillaResidencia(){
-  if(!confirm('¿Cargar las 22 cuidadoras oficiales de la residencia y el ciclo de 21 semanas del PDF?\n\nSe restablecerán las 22 cuidadoras y se regenerarán los cuadrantes para todo el año.')) return;
+  if(!confirm('¿Cargar las 21 cuidadoras oficiales de la residencia y el ciclo de 21 semanas del PDF?\n\nSe restablecerán las 21 cuidadoras y se regenerarán los cuadrantes para todo el año.')) return;
   state.trabajadores = trabajadoresDemo();
   state.roles = defaultRoles();
   state.tiposTurno = defaultTurnos();
@@ -2935,11 +2938,11 @@ function cargarPlantillaResidencia(){
   save(state);
   if(curMesIdx !== null && curAnyo !== null) renderMes();
   else renderAnios();
-  alert('✅ Se han cargado las 22 cuidadoras oficiales y el ciclo de 21 semanas del PDF.\n• Cobertura 7M · 6T · 2N garantizada todos los días.\n• Fines de semana libres (S+D) garantizados.');
+  alert('✅ Se han cargado las 21 cuidadoras y el ciclo de 21 semanas del PDF.\n• Cobertura 7M · 6T · 2N garantizada todos los días.\n• Fines de semana libres (S+D) garantizados.');
 }
 function generarMes(){
-  // Protección: si no tiene las 22 cuidadoras de la residencia o la cadencia de 21 semanas, restaurarlas automáticamente
-  if(!state.trabajadores || state.trabajadores.length < 21 || state.trabajadores.some(t => t.apellidos && t.apellidos.includes('García'))){
+  // Protección: si no tiene las 21 cuidadoras de la residencia o la cadencia de 21 semanas, restaurarlas automáticamente
+  if(!state.trabajadores || state.trabajadores.length < 21 || state.trabajadores.some(t => !t.nombre || !t.nombre.startsWith('Cuidadora '))){
     state.trabajadores = trabajadoresDemo();
     state.roles = defaultRoles();
   }
