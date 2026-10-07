@@ -76,7 +76,30 @@ Con el objetivo de erradicar los descansos fragmentados de un solo día libre ai
   * Facilita la adaptación del reloj biológico y la restauración total del sueño.
 * **Bloques de 2 Libres Consecutivos (`L-L`):**
   * 14 bloques de 2 días de descanso semanal repartidos equilibradamente a lo largo del ciclo.
-* **Erradicación de libres fragmentados:** Los días libres aislados (de 1 solo día) se reducen drásticamente de los 16 que tenía el patrón inicial a únicamente 4 en las 21 semanas, maximizando la calidad de vida y conciliación de la plantilla.
+### 1.6. Calendario Laboral Oficial 2027 (Nacionales, Comunitat Valenciana y Moncada)
+Se integran y destacan en rojo en el calendario y cuadrante los 16 festivos oficiales correspondientes a la localidad de Moncada (Valencia) para el año 2027:
+
+1. **Festivos Nacionales (España):**
+   * **01/01/2027 (Viernes):** Año Nuevo
+   * **06/01/2027 (Miércoles):** Epifanía del Señor / Reyes Magos
+   * **26/03/2027 (Viernes):** Viernes Santo
+   * **01/05/2027 (Sábado):** Fiesta del Trabajo
+   * **15/08/2027 (Domingo):** Asunción de la Virgen
+   * **12/10/2027 (Martes):** Fiesta Nacional de España
+   * **01/11/2027 (Lunes):** Todos los Santos
+   * **06/12/2027 (Lunes):** Día de la Constitución Española
+   * **08/12/2027 (Miércoles):** Inmaculada Concepción
+   * **25/12/2027 (Sábado):** Natividad del Señor / Navidad
+
+2. **Festivos Autonómicos (Comunitat Valenciana):**
+   * **19/03/2027 (Viernes):** San José
+   * **29/03/2027 (Lunes):** Lunes de Pascua
+   * **24/06/2027 (Jueves):** San Juan
+   * **09/10/2027 (Sábado):** Día de la Comunitat Valenciana
+
+3. **Festivos Locales (Moncada - Valencia):**
+   * **10/09/2027 (Viernes):** San Jaime Apóstol (Patrón de Moncada)
+   * **04/12/2027 (Sábado):** Santa Bárbara (Patrona de Moncada)
 
 ---
 

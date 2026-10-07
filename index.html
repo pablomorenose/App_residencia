@@ -130,10 +130,7 @@ table.cuad thead th.fest{ background:var(--red-bg);}
 table.cuad thead th.fest .dnum, table.cuad thead th.fest .dlet{ color:var(--red); }
 table.cuad thead th .th-btn{ background:transparent; border:none; padding:3px 0; display:flex; flex-direction:column; align-items:center; width:100%; cursor:pointer; border-radius:4px; transition:background .12s;}
 table.cuad thead th .th-btn:hover{ background:rgba(37,99,235,.12); }
-table.cuad thead th .cov-dot{ width:7px; height:7px; border-radius:50%; margin-top:1px; display:inline-block; }
-table.cuad thead th .cov-dot.ok{ background:var(--ok); }
-table.cuad thead th .cov-dot.bad{ background:var(--red); }
-table.cuad thead th .cov-dot.warn{ background:var(--amber); }
+table.cuad thead th .cov-dot{ display:none !important; }
 
 table.cuad th.namecol{
   position:sticky; left:0; z-index:3; min-width:175px; width:175px; text-align:left; padding:3px 8px;
@@ -378,7 +375,7 @@ html[data-theme="dark"] .tbl th{ background:#262b35;}
    ================================================================= */
 
 /* ============ CONSTANTES ============ */
-const STORE_KEY = 'cuadrantes_residencia_v9';
+const STORE_KEY = 'cuadrantes_residencia_v10';
 const BACKUP_KEYS = ['cuadrantes_residencia_backup_1'];
 const MESES_NOM = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DIAS_LET = ['D','L','M','X','J','V','S'];
@@ -458,14 +455,29 @@ function festivosEspanaAnyo(anyo){
   ];
 }
 function festivosDemo(){
-  const out=[]; [2025,2026,2027].forEach(y=>out.push(...festivosEspanaAnyo(y)));
-  out.push({fecha:'2027-02-28', nombre:'Día de Andalucía', tipo:'autonomico'});
-  out.push({fecha:'2027-03-19', nombre:'San José', tipo:'autonomico'});
-  out.push({fecha:'2027-10-15', nombre:'Fiestas del municipio (ej.)', tipo:'local'});
-  out.push({fecha:'2026-02-28', nombre:'Día de Andalucía', tipo:'autonomico'});
-  out.push({fecha:'2026-03-19', nombre:'San José', tipo:'autonomico'});
-  out.push({fecha:'2026-10-15', nombre:'Fiestas del municipio (ej.)', tipo:'local'});
-  return out;
+  return [
+    // --- 2027 NACIONALES (ESPAÑA) ---
+    {fecha:'2027-01-01', nombre:'Año Nuevo', tipo:'nacional'},
+    {fecha:'2027-01-06', nombre:'Reyes Magos', tipo:'nacional'},
+    {fecha:'2027-03-26', nombre:'Viernes Santo', tipo:'nacional'},
+    {fecha:'2027-05-01', nombre:'Fiesta del Trabajo', tipo:'nacional'},
+    {fecha:'2027-08-15', nombre:'Asunción de la Virgen', tipo:'nacional'},
+    {fecha:'2027-10-12', nombre:'Fiesta Nacional de España', tipo:'nacional'},
+    {fecha:'2027-11-01', nombre:'Todos los Santos', tipo:'nacional'},
+    {fecha:'2027-12-06', nombre:'Día de la Constitución', tipo:'nacional'},
+    {fecha:'2027-12-08', nombre:'Inmaculada Concepción', tipo:'nacional'},
+    {fecha:'2027-12-25', nombre:'Navidad', tipo:'nacional'},
+
+    // --- 2027 COMUNITAT VALENCIANA ---
+    {fecha:'2027-03-19', nombre:'San José', tipo:'autonomico'},
+    {fecha:'2027-03-29', nombre:'Lunes de Pascua', tipo:'autonomico'},
+    {fecha:'2027-06-24', nombre:'San Juan', tipo:'autonomico'},
+    {fecha:'2027-10-09', nombre:'Día de la Comunitat Valenciana', tipo:'autonomico'},
+
+    // --- 2027 LOCALES DE MONCADA (VALENCIA) ---
+    {fecha:'2027-09-10', nombre:'San Jaime (Moncada)', tipo:'local'},
+    {fecha:'2027-12-04', nombre:'Santa Bárbara (Moncada)', tipo:'local'}
+  ];
 }
 // Plantilla de la residencia: 21 cuidadoras identificadas solo por número (01 a 21)
 function trabajadoresDemo(){
@@ -500,8 +512,8 @@ function plantillasDemo(){
 }
 function defaultState(){
   return {
-    version:9,
-    centro:{ nombre:'Residencia Nuestra Señora de la Paz', localidad:'Sevilla', comunidadAutonoma:'Andalucía', anyoActivo:2027, modoMes:'natural' },
+    version:10,
+    centro:{ nombre:'Residencia Moncada', localidad:'Moncada', comunidadAutonoma:'Comunitat Valenciana', anyoActivo:2027, modoMes:'natural' },
     trabajadores: trabajadoresDemo(),
     roles: defaultRoles(),
     tiposTurno: defaultTurnos(),
@@ -531,6 +543,7 @@ function limpiarEspacioLocalStorage(){
       'cuadrantes_residencia_backup_4',
       'cuadrantes_residencia_backup_5',
       'cuadrantes_pre_import_backup',
+      'cuadrantes_residencia_v9',
       'cuadrantes_residencia_v8',
       'cuadrantes_residencia_v7',
       'cuadrantes_residencia_v6',
@@ -542,10 +555,10 @@ function limpiarEspacioLocalStorage(){
     ];
     keysToRemove.forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
     if(localStorage.getItem(STORE_KEY)){
+      try{ localStorage.removeItem('cuadrantes_residencia_v9'); }catch(e){}
       try{ localStorage.removeItem('cuadrantes_residencia_v8'); }catch(e){}
       try{ localStorage.removeItem('cuadrantes_residencia_v7'); }catch(e){}
       try{ localStorage.removeItem('cuadrantes_residencia_v6'); }catch(e){}
-      try{ localStorage.removeItem('cuadrantes_residencia_v5'); }catch(e){}
     }
   }catch(e){}
 }
@@ -593,7 +606,7 @@ function migrate(s){
   const necesitaActualizarSecuencia = seqActual !== CICLO_21[1];
   const noEsAnyo2027 = !s.centro || s.centro.anyoActivo !== 2027;
 
-  if (tienePlantillaAntigua || cadenciaNoEsCiclo21 || necesitaActualizarSecuencia || noEsAnyo2027 || !s.version || s.version < 9) {
+  if (tienePlantillaAntigua || cadenciaNoEsCiclo21 || necesitaActualizarSecuencia || noEsAnyo2027 || !s.version || s.version < 10) {
     const nombresGuardados = {};
     if (s.trabajadores && Array.isArray(s.trabajadores)) {
       s.trabajadores.forEach(t => { if(t.id && t.nombreReal) nombresGuardados[t.id] = t.nombreReal; });
@@ -602,7 +615,7 @@ function migrate(s){
     s.trabajadores.forEach(t => {
       if (nombresGuardados[t.id]) t.nombreReal = nombresGuardados[t.id];
     });
-    s.centro = { nombre:'Residencia Nuestra Señora de la Paz', localidad:'Sevilla', comunidadAutonoma:'Andalucía', anyoActivo:2027, modoMes:'natural' };
+    s.centro = { nombre:'Residencia Moncada', localidad:'Moncada', comunidadAutonoma:'Comunitat Valenciana', anyoActivo:2027, modoMes:'natural' };
     s.roles = defaultRoles();
     s.tiposTurno = defaultTurnos();
     s.config = defaultConfig();
@@ -610,7 +623,7 @@ function migrate(s){
     s.festivos = festivosDemo();
     s.ausencias = [];
     s.cuadrantes = {};
-    s.version = 9;
+    s.version = 10;
   }
   if(!s.festivos) s.festivos = [];
   if(!s.coberturas) s.coberturas = defaultCoberturas();
@@ -1324,7 +1337,6 @@ function renderMes(){
     const dotCls = cov.estado==='bad'?'bad':(cov.estado==='warn'?'warn':'ok');
     th.innerHTML = `<button class="th-btn" onclick="event.stopPropagation();editarDia('${ds}')" title="${fest?escaparAttr(fest.nombre)+': ':''}Editar día">
         <span class="dnum">${dn}</span><span class="dlet">${dl}</span>
-        <span class="cov-dot ${dotCls}" title="Cobertura: ${escaparAttr(cov.resumen||'')}"></span>
         ${isFest?`<span class="fest-name" title="${escaparAttr(fest.nombre)}">${escaparHTML(fest.nombre)}</span>`:''}
       </button>`;
     headRow.appendChild(th);
