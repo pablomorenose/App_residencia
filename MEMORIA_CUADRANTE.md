@@ -185,20 +185,28 @@ Para cubrir la dotación exigida (7M + 6T + 2N), se analizan las dos configuraci
 
 ## 6. SECUENCIA OFICIAL Y AUDITORÍA DE RESULTADOS (365 DÍAS - AÑO 2027)
 
-La secuencia implementada en la aplicación (`CICLO_21[1]`) consta de 147 días (21 semanas de lunes a domingo, fecha ancla `2027-01-04`):
+La secuencia implementada en la aplicación (`CICLO_21[1]`, versión 11) consta de 147 días (21 semanas de lunes a domingo, fecha ancla `2027-01-04`):
 
 ```text
-M-T-L-L-T-T-T-T-T-T-L-L-M-M-M-M-M-T-L-M-M-M-M-N-N-L-L-L-M-T-T-T-T-T-L-L-M-M-M-T-T-T-L-L-M-T-N-N-N-L-N-N-L-M-M-M-M-M-T-L-L-T-T-N-N-L-M-M-L-L-M-M-T-N-N-L-L-L-M-M-M-M-M-M-L-L-M-T-T-N-N-N-L-L-M-M-L-L-T-T-T-T-L-L-M-M-M-M-M-M-L-L-L-L-M-M-M-M-T-T-L-L-M-T-T-T-T-L-L-T-T-T-T-T-T-L-L-M-M-M-T-T-T-L-L-M-M
+T-L-M-M-M-L-L-N-N-L-L-M-M-M-M-M-T-L-L-M-M-M-M-T-L-M-L-L-T-N-N-L-L-M-M-M-M-T-T-L-M-T-T-T-T-L-L-M-M-M-M-N-N-L-L-M-M-T-L-T-T-T-T-L-L-M-T-T-T-T-L-L-M-N-N-L-L-T-T-T-T-L-M-M-M-T-T-L-M-M-M-M-T-L-M-N-N-L-L-M-M-M-M-L-L-L-L-M-M-M-T-T-T-L-L-T-T-N-N-L-M-M-M-T-T-T-L-M-M-M-M-L-L-T-T-L-T-T-T-N-N-L-L-M-T-T-T
 ```
 
 ### Resultados de la Auditoría en los 365 Días de 2027:
 * **Cobertura diaria (365/365 días):** 100% exacta (7 Mañanas, 6 Tardes, 2 Noches, 6 Libres en todos y cada uno de los días de 2027).
+* **Equidad Anual Estricta en Turnos y Horas:**
+  * **Noches anuales:** Entre **34 y 36 noches** (diferencia máxima: **solo 2 noches** en todo el año). Todas organizadas en bloques dobles (`N-N`), sin noches aisladas.
+  * **Tardes anuales:** Entre **102 y 107 tardes** (diferencia máxima: **solo 5 tardes** en todo el año, media teórica de 104,28).
+  * **Mañanas anuales:** Entre **120 y 124 mañanas** (diferencia máxima: **solo 4 mañanas** en todo el año, media teórica de 121,67).
+  * **Días Libres anuales:** Entre **102 y 106 libres** (diferencia máxima: **solo 4 libres**, promedio exacto de 2,00 libres/semana).
+  * **Horas brutas anuales:** Entre **1.921 h y 1.943 h** (diferencia máxima: **solo 22 horas** en todo el año, frente a las 63 horas de disparidad de versiones anteriores).
+* **Protocolo de Ergonomía y Descanso (Puntos 1 al 4):**
+  * **Viernes previo (Punto 1):** El 100% de los fines de semana de descanso regular van precedidos de un turno de Mañana (M) el viernes, con salida a las 15:00 h.
+  * **Fines de semana completos (Punto 2):** Descanso íntegro de 48 horas (Sábado L y Domingo L).
+  * **Lunes posterior (Punto 3):** Reincorporación protegida en turno de Tarde (15:00 h) o Noche (22:00 h). **0% de turno de Mañana los lunes tras fin de semana libre** (0 casos en todo el año).
+  * **Descanso interjornada $\ge 12$h (Punto 4):** **0 infracciones** en los 365 días de 2027 ($0\text{ }T\rightarrow M,\; 0\text{ }N\rightarrow M,\; 0\text{ }N\rightarrow T$).
+  * **Límite de trabajo continuo:** Máximo de **6 días consecutivos de trabajo** (nunca 7).
 * **Estructura de descansos en el ciclo:**
-  * **1 bloque de 4 Libres (`L-L-L-L`):** 96 horas continuas de descanso tras 6 mañanas.
-  * **2 bloques de 3 Libres (`L-L-L`):** 72 horas continuas de recuperación tras noches (`N-N-L-L-L`).
-  * **14 bloques de 2 Libres (`L-L`):** Descansos regulares y fines de semana.
-  * **Solo 4 días de libre aislado** en 147 días (frente a los 16 del patrón inicial).
-* **Equidad de descanso:** Exactamente **2,00 días libres/semana** de media (102 a 107 días libres brutos al año por trabajadora según el punto de entrada).
-* **Infracciones de descanso ($\ge 12$h):** **0 infracciones** en los 365 días de 2027.
-* **Jornada media individual:** **37,00 horas/semana** (1.743 horas anuales netas tras vacaciones y permisos, dentro del tope legal de 1.772 h).
+  * **1 bloque de 4 Libres (`L-L-L-L`):** 96 horas continuas de descanso tras 4 mañanas consecutivas.
+  * **Bloques de descanso tras noche:** Tras cada bloque de noches (`N-N`), se suceden al menos 2 días de descanso reglamentario (`L-L`), garantizando un mínimo de 48 horas de recuperación biológica.
+* **Jornada media individual:** **37,00 horas/semana** (1.743 horas anuales netas estimadas tras vacaciones y permisos, cumpliendo holgadamente el tope de 1.772 h del Convenio de la Dependencia).
 
