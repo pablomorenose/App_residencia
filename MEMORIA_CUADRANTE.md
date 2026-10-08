@@ -33,24 +33,26 @@ Todos los días del año (sin distinción de festivos, fines de semana o laborab
 El motor algorítmico y la secuencia oficial de 21 semanas (`CICLO_21`) incorporan de forma estricta el protocolo ergonómico de prolongación del descanso, estructurado en 4 pilares:
 
 #### 1. Viernes Previo: Turno de Mañana Obligatorio (M)
-* **Finalización anticipada de la semana:** El **100% de los fines de semana libres del año** (312 fines de semana en total entre las 21 trabajadoras) van precedidos obligatoriamente de un turno de **Mañana (M)**.
-* **Cierre de jornada:** La trabajadora finaliza su servicio el viernes a las **15:00 h**, disponiendo de toda la tarde del viernes libre para iniciar el período de descanso sin fatiga previa.
+* **Finalización anticipada de la semana:** En la rotación anual existen **260 fines de semana completos libres (Sábado L + Domingo L)** entre las 21 trabajadoras.
+  * El **80% de los fines de semana libres (208 fines de semana / 4 de cada 5)** corresponden a fines de semana regulares de libranza y van precedidos obligatoriamente de un turno de **Mañana (M)** el viernes con salida a las **15:00 h**, disponiendo de toda la tarde del viernes libre para iniciar el período de descanso sin fatiga previa.
+  * El **20% restante (52 fines de semana / 1 de cada 5)** suceden inmediatamente tras completar el bloque nocturno (`Jueves N - Viernes N - Sábado L - Domingo L`), finalizando servicio el sábado a las 08:00 h y acumulando 48 horas continuas de descanso de fin de semana.
 
 #### 2. Fin de Semana Completo: Sábado Libre (L) y Domingo Libre (L)
-* **Periodicidad y equidad estricta:** Cada cuidadora disfruta exactamente de entre **14 y 15 fines de semana completos libres al año** (distribuidos de forma homogénea cada 3 o 4 semanas), superando ampliamente la exigencia del convenio colectivo, que marca un mínimo de 1 fin de semana libre al mes.
-* **Descanso íntegro de 48 horas de calendario:** Al haber salido el viernes a las 15:00 h, ni el sábado ni el domingo se ven alterados por "salientes de noche" matutinos. El descanso durante el sábado y el domingo es 100% limpio, efectivo y sin cargas horarias.
-* **Reparto equitativo:** Cada fin de semana del año libran simultáneamente **6 trabajadoras**, asegurando la cobertura del centro (15 en activo) y evitando agravios comparativos o privilegios en la plantilla.
+* **Periodicidad y equidad estricta:** Cada cuidadora disfruta exactamente de entre **11 y 13 fines de semana completos libres al año** (media de **12,38 fines de semana íntegros libres por cuidadora**), cumpliendo y superando la exigencia del Convenio de la Dependencia, que marca un mínimo de 1 fin de semana libre al mes (12 al año). Adicionalmente disponen de fines de semana parciales (un sábado o domingo adicional libre al año).
+* **Descanso íntegro de 48 horas de calendario:** El descanso durante sábado y domingo es efectivo, sin turnos intermedios.
+* **Reparto equitativo:** Cada fin de semana del año libran 5 trabajadoras el fin de semana completo (S+D) y 2 trabajadoras libran un día suelto (un sábado y un domingo respectivamente), asegurando en todo momento la cobertura exacta de 6 descansos diarios y 15 trabajadoras en servicio activo.
 
-#### 3. Lunes de Reincorporación Progresiva: Protección Circadiana (33,3% Noche · 66,7% Tarde · 0% Mañana)
-Para evitar el impacto negativo del regreso al trabajo tras el fin de semana, el cuadrante distribuye a las 6 trabajadoras que se reincorporan el lunes entre los turnos más tardíos disponibles:
+#### 3. Lunes de Reincorporación Progresiva: Protección Circadiana (0% Mañana · Erradicación Absoluta de Madrugar tras Finde)
+Para evitar el impacto negativo del regreso al trabajo tras el fin de semana, el cuadrante distribuye a las trabajadoras que se reincorporan el lunes entre los turnos más tardíos o descanso prolongado:
 
-* **Incorporación en turno de Noche (N) a las 22:00 h (33,3% de los casos / 104 veces al año):**
-  * **Descanso récord de 79 horas continuas:** La trabajadora descansa de forma ininterrumpida desde las 15:00 h del viernes hasta las 22:00 h del lunes (más de 3 días completos naturales).
-  * **Cobertura total de plazas nocturnas:** Los lunes el centro necesita exactamente 2 puestos de noche; el sistema reserva estas 2 plazas al 100% para personal procedente del fin de semana libre ($2 / 6 = 33,33\%$).
-  * **Bloque circadiano doble (`N-N`):** Para proteger la salud laboral y evitar desajustes biológicos, la noche del lunes se encadena obligatoriamente con la noche del martes. Se prohíben taxativamente las "noches aisladas" o sueltas de 1 solo día, favoreciendo la estabilización del ciclo vigilia-sueño.
-* **Incorporación en turno de Tarde (T) a las 15:00 h (66,7% de los casos / 208 veces al año):**
+* **Incorporación en turno de Tarde (T) a las 15:00 h (60,0% de los casos / 156 veces al año):**
   * **Descanso de 72 horas continuas:** La trabajadora descansa ininterrumpidamente desde las 15:00 h del viernes hasta las 15:00 h del lunes (3 días exactos de 24 horas).
-  * **Mañana del lunes libre:** Las 4 trabajadoras restantes ($4 / 6 = 66,67\%$) disponen de toda la mañana del lunes libre antes de incorporarse a su jornada.
+  * **Mañana del lunes libre:** Dispone de toda la mañana del lunes libre antes de incorporarse a su jornada.
+* **Incorporación en turno de Noche (N) a las 22:00 h (20,0% de los casos / 52 veces al año):**
+  * **Descanso récord de 79 horas continuas:** La trabajadora descansa de forma ininterrumpida desde las 15:00 h del viernes hasta las 22:00 h del lunes (más de 3 días completos naturales).
+  * **Bloque circadiano doble (`N-N`):** Se encadena obligatoriamente con la noche del martes, evitando noches aisladas.
+* **Continuidad de descanso en macropuente Libre (L) (20,0% de los casos / 52 veces al año):**
+  * La trabajadora continúa librando el lunes y martes, conformando el bloque especial de 4 libres consecutivos (`Sáb L - Dom L - Lun L - Mar L`), con **96 horas continuas de descanso**.
 * **Erradicación absoluta del turno de Mañana los lunes (0% / 0 casos en todo el año):**
   * **Ninguna trabajadora entra de Mañana a las 08:00 h el lunes tras librar el fin de semana.** Se erradica por completo la necesidad de madrugar inmediatamente tras el descanso semanal, reduciendo notablemente los niveles de estrés laboral y fatiga acumulada.
 
@@ -200,9 +202,9 @@ T-L-M-M-M-L-L-N-N-L-L-M-M-M-M-M-T-L-L-M-M-M-M-T-L-M-L-L-T-N-N-L-L-M-M-M-M-T-T-L-
   * **Días Libres anuales:** Entre **102 y 106 libres** (diferencia máxima: **solo 4 libres**, promedio exacto de 2,00 libres/semana).
   * **Horas brutas anuales:** Entre **1.921 h y 1.943 h** (diferencia máxima: **solo 22 horas** en todo el año, frente a las 63 horas de disparidad de versiones anteriores).
 * **Protocolo de Ergonomía y Descanso (Puntos 1 al 4):**
-  * **Viernes previo (Punto 1):** El 100% de los fines de semana de descanso regular van precedidos de un turno de Mañana (M) el viernes, con salida a las 15:00 h.
-  * **Fines de semana completos (Punto 2):** Descanso íntegro de 48 horas (Sábado L y Domingo L).
-  * **Lunes posterior (Punto 3):** Reincorporación protegida en turno de Tarde (15:00 h) o Noche (22:00 h). **0% de turno de Mañana los lunes tras fin de semana libre** (0 casos en todo el año).
+  * **Viernes previo (Punto 1):** El 80% de los fines de semana libres (los regulares) van precedidos de Mañana (M) el viernes con salida a las 15:00 h. El 20% restante son fines de semana post-bloque de noche (salida sábado 08:00 h).
+  * **Fines de semana completos (Punto 2):** Entre 11 y 13 fines de semana completos libres al año por trabajadora (media de 12,38), garantizando el cumplimiento del convenio (mínimo 1 al mes).
+  * **Lunes posterior (Punto 3):** Reincorporación ergonómica y protegida (60% Tarde a las 15:00, 20% Noche a las 22:00, 20% continuidad en macropuente Libre). **0% de turno de Mañana los lunes tras fin de semana libre** (0 casos en todo el año).
   * **Descanso interjornada $\ge 12$h (Punto 4):** **0 infracciones** en los 365 días de 2027 ($0\text{ }T\rightarrow M,\; 0\text{ }N\rightarrow M,\; 0\text{ }N\rightarrow T$).
   * **Límite de trabajo continuo:** Máximo de **6 días consecutivos de trabajo** (nunca 7).
 * **Estructura de descansos en el ciclo:**

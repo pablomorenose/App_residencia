@@ -512,7 +512,7 @@ function plantillasDemo(){
 }
 function defaultState(){
   return {
-    version:10,
+    version:11,
     centro:{ nombre:'Residencia Moncada', localidad:'Moncada', comunidadAutonoma:'Comunitat Valenciana', anyoActivo:2027, modoMes:'natural' },
     trabajadores: trabajadoresDemo(),
     roles: defaultRoles(),
@@ -2999,7 +2999,7 @@ function cargarPlantillaResidencia(){
 }
 function generarMes(){
   // Protección: si no tiene las 21 cuidadoras de la residencia o la cadencia de 21 semanas, restaurarlas automáticamente
-  if(!state.trabajadores || state.trabajadores.length < 21 || state.trabajadores.some(t => !t.nombre || !t.nombre.startsWith('Cuidadora '))){
+  if(!state.trabajadores || state.trabajadores.length < 21 || state.trabajadores.some(t => !t.numero)){
     state.trabajadores = trabajadoresDemo();
     state.roles = defaultRoles();
   }
@@ -3035,7 +3035,14 @@ function regenerarTodoElAnyo(){
   const y = curAnyo || state.centro.anyoActivo || 2027;
   if(!confirm(`¿Borrar y regenerar automáticamente los 12 meses de ${y} con la cadencia oficial de 21 semanas?\n\n• Cobertura diaria 7M · 6T · 2N garantizada en los 365 días\n• Descanso mínimo de 12h\n• Mínimo 1 fin de semana libre al mes para todas las cuidadoras\n• 2 días libres semanales de media`)) return;
 
+  const nombresGuardados = {};
+  if (state.trabajadores && Array.isArray(state.trabajadores)) {
+    state.trabajadores.forEach(t => { if(t.id && t.nombreReal) nombresGuardados[t.id] = t.nombreReal; });
+  }
   state.trabajadores = trabajadoresDemo();
+  state.trabajadores.forEach(t => {
+    if (nombresGuardados[t.id]) t.nombreReal = nombresGuardados[t.id];
+  });
   state.roles = defaultRoles();
   state.tiposTurno = defaultTurnos();
   state.coberturas = defaultCoberturas();
