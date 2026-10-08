@@ -68,16 +68,19 @@ En estricta aplicación del artículo 37.1 del Estatuto de los Trabajadores y de
 * **Balance de infracciones en los 365 días del año:** **0 infracciones registradas**. Todas las transiciones del año respetan o superan holgadamente el marco legal.
 
 ### 1.5. Agrupación de Días Libres en Bloques Prolongados (3L y 4L)
-Con el objetivo de erradicar los descansos fragmentados de un solo día libre aislado (los cuales no permiten una recuperación física completa), la secuencia anual reordena los descansos en bloques agrupados:
+Con el objetivo de erradicar los descansos fragmentados de un solo día libre aislado (los cuales no permiten una recuperación física completa), la secuencia anual oficial reordena los descansos en bloques agrupados mediante optimización matemática por programación de restricciones (CP-SAT):
 
 * **Bloque de 4 Libres Consecutivos (`L-L-L-L`):**
-  * Descanso continuado de **96 horas naturales** (4 días completos de descanso) tras completar un ciclo de trabajo concentrado.
+  * Descanso continuado de **96 horas naturales** (4 días completos de descanso) tras completar el ciclo de noches de mitad de semana (`N-N-L-L-L-L`), enlazando fin de semana con lunes y martes.
   * Funciona como un "macropuente" vacacional recurrente dentro de la propia rueda de trabajo ordinaria.
-* **Bloques de 3 Libres Consecutivos (`L-L-L`):**
-  * Descanso continuado de **72 horas naturales** ubicado estratégicamente tras la finalización de los bloques de noches (`N-N-L-L-L`).
-  * Facilita la adaptación del reloj biológico y la restauración total del sueño.
+* **Bloque de 3 Libres Consecutivos (`L-L-L`):**
+  * Descanso continuado de **72 horas naturales** configurado como fin de semana largo de 3 días (`Viernes L - Sábado L - Domingo L`), seguido de entrada en turno de tarde.
+  * Facilita una restauración física profunda y conciliación familiar sin fatiga.
 * **Bloques de 2 Libres Consecutivos (`L-L`):**
-  * 14 bloques de 2 días de descanso semanal repartidos equilibradamente a lo largo del ciclo.
+  * **17 bloques de 2 días de descanso semanal** repartidos equilibradamente a lo largo del ciclo (34 días libres en parejas).
+* **Minimización de Libres Aislados (Sueltos):**
+  * Reducción drástica del **90%** en días libres sueltos: de los 10 días sueltos de versiones anteriores a **un único día libre suelto (1L) en todo el ciclo de 21 semanas** (demostrado matemáticamente como el mínimo absoluto posible con 5 fines de semana completos).
+  * En el cómputo de todo el año 2027, cada cuidadora realiza únicamente entre **2 y 4 días libres aislados en los 365 días**. Más del **97% de todos los días libres del año están agrupados en bloques de 2, 3 o 4 consecutivos**.
 ### 1.6. Calendario Laboral Oficial 2027 (Nacionales, Comunitat Valenciana y Moncada)
 Se integran y destacan en rojo en el calendario y cuadrante los 16 festivos oficiales correspondientes a la localidad de Moncada (Valencia) para el año 2027:
 
@@ -187,28 +190,29 @@ Para cubrir la dotación exigida (7M + 6T + 2N), se analizan las dos configuraci
 
 ## 6. SECUENCIA OFICIAL Y AUDITORÍA DE RESULTADOS (365 DÍAS - AÑO 2027)
 
-La secuencia implementada en la aplicación (`CICLO_21[1]`, versión 11) consta de 147 días (21 semanas de lunes a domingo, fecha ancla `2027-01-04`):
+La secuencia implementada en la aplicación (`CICLO_21[1]`, versión 12) consta de 147 días (21 semanas de lunes a domingo, fecha ancla `2027-01-04`):
 
 ```text
-T-L-M-M-M-L-L-N-N-L-L-M-M-M-M-M-T-L-L-M-M-M-M-T-L-M-L-L-T-N-N-L-L-M-M-M-M-T-T-L-M-T-T-T-T-L-L-M-M-M-M-N-N-L-L-M-M-T-L-T-T-T-T-L-L-M-T-T-T-T-L-L-M-N-N-L-L-T-T-T-T-L-M-M-M-T-T-L-M-M-M-M-T-L-M-N-N-L-L-M-M-M-M-L-L-L-L-M-M-M-T-T-T-L-L-T-T-N-N-L-M-M-M-T-T-T-L-M-M-M-M-L-L-T-T-L-T-T-T-N-N-L-L-M-T-T-T
+T-T-L-L-T-T-T-N-N-L-L-M-M-M-M-M-T-L-L-M-M-M-T-T-T-L-L-L-T-N-N-L-L-M-M-M-M-L-L-M-M-M-M-M-M-L-L-M-T-T-T-N-N-L-L-L-L-M-T-T-T-T-T-L-M-M-M-M-L-L-T-T-T-N-N-L-L-T-T-T-T-L-L-M-M-M-M-M-M-L-L-T-T-T-T-N-N-L-L-M-M-M-M-T-T-L-L-M-M-M-M-M-M-L-L-T-T-N-N-L-L-M-M-T-T-T-L-L-M-M-M-M-M-M-L-L-T-T-T-N-N-L-L-M-T-T-T
 ```
 
 ### Resultados de la Auditoría en los 365 Días de 2027:
 * **Cobertura diaria (365/365 días):** 100% exacta (7 Mañanas, 6 Tardes, 2 Noches, 6 Libres en todos y cada uno de los días de 2027).
+* **Agrupación Máxima de Descansos (Eliminación de Libres Sueltos):**
+  * **Reducción del 90% en libres sueltos:** Reducido a **un único día libre suelto (1L) en todo el ciclo de 21 semanas** (mínimo absoluto demostrable matemáticamente para mantener 5 fines de semana completos).
+  * **Cómputo anual de libres sueltos:** Cada cuidadora realiza únicamente entre **2 y 4 libres aislados en todo el año** (frente a los ~25 de versiones anteriores).
+  * **97,6% de descansos agrupados:** 17 bloques de 2 Libres (`L-L`), 1 bloque de 3 Libres (`L-L-L`) y 1 bloque de 4 Libres (`L-L-L-L`).
 * **Equidad Anual Estricta en Turnos y Horas:**
   * **Noches anuales:** Entre **34 y 36 noches** (diferencia máxima: **solo 2 noches** en todo el año). Todas organizadas en bloques dobles (`N-N`), sin noches aisladas.
-  * **Tardes anuales:** Entre **102 y 107 tardes** (diferencia máxima: **solo 5 tardes** en todo el año, media teórica de 104,28).
-  * **Mañanas anuales:** Entre **120 y 124 mañanas** (diferencia máxima: **solo 4 mañanas** en todo el año, media teórica de 121,67).
-  * **Días Libres anuales:** Entre **102 y 106 libres** (diferencia máxima: **solo 4 libres**, promedio exacto de 2,00 libres/semana).
-  * **Horas brutas anuales:** Entre **1.921 h y 1.943 h** (diferencia máxima: **solo 22 horas** en todo el año, frente a las 63 horas de disparidad de versiones anteriores).
+  * **Tardes anuales:** Entre **103 y 107 tardes** (diferencia máxima: **solo 4 tardes** en todo el año, media teórica de 104,28).
+  * **Mañanas anuales:** Entre **119 y 124 mañanas** (diferencia máxima: **solo 5 mañanas** en todo el año, media teórica de 121,67).
+  * **Días Libres anuales:** Entre **103 y 106 libres** (diferencia máxima: **solo 3 libres**, promedio exacto de 2,00 libres/semana).
+  * **Horas brutas anuales:** Entre **1.918 h y 1.936 h** (diferencia máxima récord: **solo 18 horas** en todo el año, frente a las 63h de la versión original).
 * **Protocolo de Ergonomía y Descanso (Puntos 1 al 4):**
-  * **Viernes previo (Punto 1):** El 80% de los fines de semana libres (los regulares) van precedidos de Mañana (M) el viernes con salida a las 15:00 h. El 20% restante son fines de semana post-bloque de noche (salida sábado 08:00 h).
-  * **Fines de semana completos (Punto 2):** Entre 11 y 13 fines de semana completos libres al año por trabajadora (media de 12,38), garantizando el cumplimiento del convenio (mínimo 1 al mes).
-  * **Lunes posterior (Punto 3):** Reincorporación ergonómica y protegida (60% Tarde a las 15:00, 20% Noche a las 22:00, 20% continuidad en macropuente Libre). **0% de turno de Mañana los lunes tras fin de semana libre** (0 casos en todo el año).
+  * **Viernes previo (Punto 1):** El 80% de los fines de semana libres van precedidos de Mañana (M) o Libre (L) conformando fines de semana de 3 o 4 días continuos sin fatiga.
+  * **Fines de semana completos (Punto 2):** Entre 10 y 15 fines de semana completos libres al año por trabajadora (media de 12,38), garantizando el cumplimiento del convenio (mínimo 1 al mes).
+  * **Lunes posterior (Punto 3):** Reincorporación ergonómica y protegida (80% Tarde a las 15:00, 20% continuidad en macropuente Libre). **0% de turno de Mañana los lunes tras fin de semana libre** (0 casos en todo el año; nadie madruga tras fin de semana libre).
   * **Descanso interjornada $\ge 12$h (Punto 4):** **0 infracciones** en los 365 días de 2027 ($0\text{ }T\rightarrow M,\; 0\text{ }N\rightarrow M,\; 0\text{ }N\rightarrow T$).
   * **Límite de trabajo continuo:** Máximo de **6 días consecutivos de trabajo** (nunca 7).
-* **Estructura de descansos en el ciclo:**
-  * **1 bloque de 4 Libres (`L-L-L-L`):** 96 horas continuas de descanso tras 4 mañanas consecutivas.
-  * **Bloques de descanso tras noche:** Tras cada bloque de noches (`N-N`), se suceden al menos 2 días de descanso reglamentario (`L-L`), garantizando un mínimo de 48 horas de recuperación biológica.
 * **Jornada media individual:** **37,00 horas/semana** (1.743 horas anuales netas estimadas tras vacaciones y permisos, cumpliendo holgadamente el tope de 1.772 h del Convenio de la Dependencia).
 

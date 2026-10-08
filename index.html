@@ -375,15 +375,15 @@ html[data-theme="dark"] .tbl th{ background:#262b35;}
    ================================================================= */
 
 /* ============ CONSTANTES ============ */
-const STORE_KEY = 'cuadrantes_residencia_v11';
+const STORE_KEY = 'cuadrantes_residencia_v12';
 const BACKUP_KEYS = ['cuadrantes_residencia_backup_1'];
 const MESES_NOM = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DIAS_LET = ['D','L','M','X','J','V','S'];
 const BASICOS = ['M','T','N','L','VAC','BAJ','PER'];
-// Secuencias de 21 semanas (147 días, empiezan en lunes): Cobertura 7M·6T·2N, bloques de 3L y 4L, equidad anual homogénea 2027
+// Secuencias de 21 semanas (147 días, empiezan en lunes): Cobertura 7M·6T·2N, bloques de 3L y 4L, mínimo absoluto de libres sueltos (solo 1 en todo el ciclo)
 const CICLO_21 = {
-  1:'T-L-M-M-M-L-L-N-N-L-L-M-M-M-M-M-T-L-L-M-M-M-M-T-L-M-L-L-T-N-N-L-L-M-M-M-M-T-T-L-M-T-T-T-T-L-L-M-M-M-M-N-N-L-L-M-M-T-L-T-T-T-T-L-L-M-T-T-T-T-L-L-M-N-N-L-L-T-T-T-T-L-M-M-M-T-T-L-M-M-M-M-T-L-M-N-N-L-L-M-M-M-M-L-L-L-L-M-M-M-T-T-T-L-L-T-T-N-N-L-M-M-M-T-T-T-L-M-M-M-M-L-L-T-T-L-T-T-T-N-N-L-L-M-T-T-T',
-  2:'T-L-M-M-M-L-L-N-N-L-L-M-M-M-M-M-T-L-L-M-M-M-M-T-L-M-L-L-T-N-N-L-L-M-M-M-M-T-T-L-M-T-T-T-T-L-L-M-M-M-M-N-N-L-L-M-M-T-L-T-T-T-T-L-L-M-T-T-T-T-L-L-M-N-N-L-L-T-T-T-T-L-M-M-M-T-T-L-M-M-M-M-T-L-M-N-N-L-L-M-M-M-M-L-L-L-L-M-M-M-T-T-T-L-L-T-T-N-N-L-M-M-M-T-T-T-L-M-M-M-M-L-L-T-T-L-T-T-T-N-N-L-L-M-T-T-T'
+  1:'T-T-L-L-T-T-T-N-N-L-L-M-M-M-M-M-T-L-L-M-M-M-T-T-T-L-L-L-T-N-N-L-L-M-M-M-M-L-L-M-M-M-M-M-M-L-L-M-T-T-T-N-N-L-L-L-L-M-T-T-T-T-T-L-M-M-M-M-L-L-T-T-T-N-N-L-L-T-T-T-T-L-L-M-M-M-M-M-M-L-L-T-T-T-T-N-N-L-L-M-M-M-M-T-T-L-L-M-M-M-M-M-M-L-L-T-T-N-N-L-L-M-M-T-T-T-L-L-M-M-M-M-M-M-L-L-T-T-T-N-N-L-L-M-T-T-T',
+  2:'T-T-L-L-T-T-T-N-N-L-L-M-M-M-M-M-T-L-L-M-M-M-T-T-T-L-L-L-T-N-N-L-L-M-M-M-M-L-L-M-M-M-M-M-M-L-L-M-T-T-T-N-N-L-L-L-L-M-T-T-T-T-T-L-M-M-M-M-L-L-T-T-T-N-N-L-L-T-T-T-T-L-L-M-M-M-M-M-M-L-L-T-T-T-T-N-N-L-L-M-M-M-M-T-T-L-L-M-M-M-M-M-M-L-L-T-T-N-N-L-L-M-M-T-T-T-L-L-M-M-M-M-M-M-L-L-T-T-T-N-N-L-L-M-T-T-T'
 };
 const ANCLA_CICLO_21 = '2027-01-04';
 const ORIGEN_MANUAL='manual', ORIGEN_AUTO='automatico', ORIGEN_REGLA='regla', ORIGEN_AUSENCIA='ausencia', ORIGEN_CADENCIA='cadencia';
@@ -512,7 +512,7 @@ function plantillasDemo(){
 }
 function defaultState(){
   return {
-    version:11,
+    version:12,
     centro:{ nombre:'Residencia Moncada', localidad:'Moncada', comunidadAutonoma:'Comunitat Valenciana', anyoActivo:2027, modoMes:'natural' },
     trabajadores: trabajadoresDemo(),
     roles: defaultRoles(),
@@ -606,7 +606,7 @@ function migrate(s){
   const necesitaActualizarSecuencia = seqActual !== CICLO_21[1];
   const noEsAnyo2027 = !s.centro || s.centro.anyoActivo !== 2027;
 
-  if (tienePlantillaAntigua || cadenciaNoEsCiclo21 || necesitaActualizarSecuencia || noEsAnyo2027 || !s.version || s.version < 11) {
+  if (tienePlantillaAntigua || cadenciaNoEsCiclo21 || necesitaActualizarSecuencia || noEsAnyo2027 || !s.version || s.version < 12) {
     const nombresGuardados = {};
     if (s.trabajadores && Array.isArray(s.trabajadores)) {
       s.trabajadores.forEach(t => { if(t.id && t.nombreReal) nombresGuardados[t.id] = t.nombreReal; });
@@ -623,7 +623,7 @@ function migrate(s){
     s.festivos = festivosDemo();
     s.ausencias = [];
     s.cuadrantes = {};
-    s.version = 11;
+    s.version = 12;
   }
   if(!s.festivos) s.festivos = [];
   if(!s.coberturas) s.coberturas = defaultCoberturas();
