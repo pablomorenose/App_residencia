@@ -38,7 +38,7 @@ El motor algorítmico y la secuencia oficial de 21 semanas (`CICLO_21`) incorpor
   * El **20% restante (52 fines de semana / 1 de cada 5)** suceden inmediatamente tras completar el bloque nocturno (`Jueves N - Viernes N - Sábado L - Domingo L`), finalizando servicio el sábado a las 08:00 h y acumulando 48 horas continuas de descanso de fin de semana.
 
 #### 2. Fin de Semana Completo: Sábado Libre (L) y Domingo Libre (L)
-* **Periodicidad y equidad estricta:** Cada cuidadora disfruta exactamente de entre **11 y 13 fines de semana completos libres al año** (media de **12,38 fines de semana íntegros libres por cuidadora**), cumpliendo y superando la exigencia del Convenio de la Dependencia, que marca un mínimo de 1 fin de semana libre al mes (12 al año). Adicionalmente disponen de fines de semana parciales (un sábado o domingo adicional libre al año).
+* **Periodicidad y equidad estricta:** Cada cuidadora disfruta exactamente de entre **12 y 13 fines de semana completos libres al año** (media exacta de **12,38 fines de semana íntegros libres por cuidadora**: 13 trabajadoras disfrutan de 12 y 8 trabajadoras disfrutan de 13, con una diferencia de **solo 1 fin de semana** en los 365 días), cumpliendo con total precisión matemática la exigencia del Convenio de la Dependencia (mínimo 1 fin de semana libre al mes = 12 al año). Adicionalmente disponen de fines de semana parciales (un sábado o domingo adicional libre al año).
 * **Descanso íntegro de 48 horas de calendario:** El descanso durante sábado y domingo es efectivo, sin turnos intermedios.
 * **Reparto equitativo:** Cada fin de semana del año libran 5 trabajadoras el fin de semana completo (S+D) y 2 trabajadoras libran un día suelto (un sábado y un domingo respectivamente), asegurando en todo momento la cobertura exacta de 6 descansos diarios y 15 trabajadoras en servicio activo.
 
@@ -190,28 +190,31 @@ Para cubrir la dotación exigida (7M + 6T + 2N), se analizan las dos configuraci
 
 ## 6. SECUENCIA OFICIAL Y AUDITORÍA DE RESULTADOS (365 DÍAS - AÑO 2027)
 
-La secuencia implementada en la aplicación (`CICLO_21[1]`, versión 12) consta de 147 días (21 semanas de lunes a domingo, fecha ancla `2027-01-04`):
+La secuencia implementada en la aplicación (`CICLO_21[1]`, versión 13) consta de 147 días (21 semanas de lunes a domingo, fecha ancla `2027-01-04`):
 
 ```text
-T-T-L-L-T-T-T-N-N-L-L-M-M-M-M-M-T-L-L-M-M-M-T-T-T-L-L-L-T-N-N-L-L-M-M-M-M-L-L-M-M-M-M-M-M-L-L-M-T-T-T-N-N-L-L-L-L-M-T-T-T-T-T-L-M-M-M-M-L-L-T-T-T-N-N-L-L-T-T-T-T-L-L-M-M-M-M-M-M-L-L-T-T-T-T-N-N-L-L-M-M-M-M-T-T-L-L-M-M-M-M-M-M-L-L-T-T-N-N-L-L-M-M-T-T-T-L-L-M-M-M-M-M-M-L-L-T-T-T-N-N-L-L-M-T-T-T
+L-M-M-M-M-L-L-N-N-L-L-M-M-M-M-T-T-L-T-T-T-T-T-L-L-T-T-T-T-N-N-L-L-M-M-M-M-T-T-L-M-M-M-T-T-L-L-M-M-M-M-N-N-L-L-L-T-T-T-L-L-M-M-M-M-M-T-L-L-M-M-M-M-N-N-L-L-L-M-T-T-T-T-T-L-L-M-M-M-L-L-T-T-T-T-N-N-L-L-M-M-T-T-T-T-L-L-M-M-M-M-T-T-L-L-M-T-N-N-L-L-M-M-M-T-T-T-L-L-M-M-M-M-M-T-L-T-T-T-N-N-L-L-M-M-L-L
 ```
 
 ### Resultados de la Auditoría en los 365 Días de 2027:
 * **Cobertura diaria (365/365 días):** 100% exacta (7 Mañanas, 6 Tardes, 2 Noches, 6 Libres en todos y cada uno de los días de 2027).
-* **Agrupación Máxima de Descansos (Eliminación de Libres Sueltos):**
-  * **Reducción del 90% en libres sueltos:** Reducido a **un único día libre suelto (1L) en todo el ciclo de 21 semanas** (mínimo absoluto demostrable matemáticamente para mantener 5 fines de semana completos).
-  * **Cómputo anual de libres sueltos:** Cada cuidadora realiza únicamente entre **2 y 4 libres aislados en todo el año** (frente a los ~25 de versiones anteriores).
-  * **97,6% de descansos agrupados:** 17 bloques de 2 Libres (`L-L`), 1 bloque de 3 Libres (`L-L-L`) y 1 bloque de 4 Libres (`L-L-L-L`).
+* **Equidad Absoluta en Fines de Semana Libres (Dispersión Mínima: Solo 1 Fin de Semana):**
+  * **Entre 12 y 13 fines de semana completos libres al año por trabajadora** (media matemática exacta: 12,38 findes libres).
+  * **Reparto homogéneo:** Exactamente **13 trabajadoras disfrutan de 12 fines de semana** y **8 trabajadoras disfrutan de 13 fines de semana**. Ninguna trabajadora tiene 10 ni 15; la diferencia máxima en la plantilla es de **solo 1 fin de semana en todo el año**.
+* **Agrupación de Descansos (Erradicación de Libres Sueltos):**
+  * **Solo 4 días libres aislados en el ciclo de 147 días** (frente a los 10 de versiones anteriores).
+  * En todo el año 2027, cada cuidadora realiza entre **6 y 10 días libres sueltos en 365 días** (menos de 1 libre aislado al mes).
+  * **92,8% de descansos agrupados:** 16 bloques de 2 Libres (`L-L`) y 2 bloques de 3 Libres (`L-L-L`).
 * **Equidad Anual Estricta en Turnos y Horas:**
   * **Noches anuales:** Entre **34 y 36 noches** (diferencia máxima: **solo 2 noches** en todo el año). Todas organizadas en bloques dobles (`N-N`), sin noches aisladas.
-  * **Tardes anuales:** Entre **103 y 107 tardes** (diferencia máxima: **solo 4 tardes** en todo el año, media teórica de 104,28).
+  * **Tardes anuales:** Entre **101 y 107 tardes** (diferencia máxima: **solo 6 tardes** en todo el año, media teórica de 104,28).
   * **Mañanas anuales:** Entre **119 y 124 mañanas** (diferencia máxima: **solo 5 mañanas** en todo el año, media teórica de 121,67).
-  * **Días Libres anuales:** Entre **103 y 106 libres** (diferencia máxima: **solo 3 libres**, promedio exacto de 2,00 libres/semana).
-  * **Horas brutas anuales:** Entre **1.918 h y 1.936 h** (diferencia máxima récord: **solo 18 horas** en todo el año, frente a las 63h de la versión original).
+  * **Días Libres anuales:** Entre **102 y 106 libres** (diferencia máxima: **solo 4 libres**, promedio exacto de 2,00 libres/semana).
+  * **Horas brutas anuales:** Entre **1.915 h y 1.943 h** (diferencia máxima: **solo 28 horas** en todo el año, media de 1.929,3 h).
 * **Protocolo de Ergonomía y Descanso (Puntos 1 al 4):**
-  * **Viernes previo (Punto 1):** El 80% de los fines de semana libres van precedidos de Mañana (M) o Libre (L) conformando fines de semana de 3 o 4 días continuos sin fatiga.
-  * **Fines de semana completos (Punto 2):** Entre 10 y 15 fines de semana completos libres al año por trabajadora (media de 12,38), garantizando el cumplimiento del convenio (mínimo 1 al mes).
-  * **Lunes posterior (Punto 3):** Reincorporación ergonómica y protegida (80% Tarde a las 15:00, 20% continuidad en macropuente Libre). **0% de turno de Mañana los lunes tras fin de semana libre** (0 casos en todo el año; nadie madruga tras fin de semana libre).
+  * **Viernes previo (Punto 1):** El 80% de los fines de semana libres van precedidos de Mañana (M) o Libre (L) conformando fines de semana largos de 3 días sin fatiga.
+  * **Fines de semana completos (Punto 2):** Descanso íntegro de 48 horas continuas (Sábado L + Domingo L), cumpliendo rigurosamente la exigencia de 1 al mes del Convenio de la Dependencia.
+  * **Lunes posterior (Punto 3):** Reincorporación ergonómica y protegida (40% Tarde, 40% Libre extendido, 20% Noche). **0% de turno de Mañana los lunes tras fin de semana libre** (0 casos en todo el año; nadie madruga tras fin de semana libre).
   * **Descanso interjornada $\ge 12$h (Punto 4):** **0 infracciones** en los 365 días de 2027 ($0\text{ }T\rightarrow M,\; 0\text{ }N\rightarrow M,\; 0\text{ }N\rightarrow T$).
   * **Límite de trabajo continuo:** Máximo de **6 días consecutivos de trabajo** (nunca 7).
 * **Jornada media individual:** **37,00 horas/semana** (1.743 horas anuales netas estimadas tras vacaciones y permisos, cumpliendo holgadamente el tope de 1.772 h del Convenio de la Dependencia).
